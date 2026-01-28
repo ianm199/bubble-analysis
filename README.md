@@ -129,6 +129,34 @@ The `escapes` command accepts additional flags:
 
 Custom patterns can be added via `.flow/detectors/` (run `flow init` to set up).
 
+## Adding Custom Detectors
+
+Flow is designed to be extended with AI coding agents. The detector interface is intentionally simple: implement a protocol that returns entrypoints and handlers from parsed code.
+
+To add support for a new framework (Django, Celery, your internal RPC layer, etc.):
+
+1. Run `flow init` to create the `.flow/` directory structure
+2. Point your AI agent at `flow/protocols.py` to see the `EntrypointDetector` interface
+3. Ask it to implement a detector for your framework in `.flow/detectors/`
+
+Example prompt for an AI agent:
+
+```
+Read flow/protocols.py and flow/detectors.py to understand how entrypoint
+detection works. Then implement a detector for Django that finds:
+- Views decorated with @api_view
+- Class-based views inheriting from APIView
+- URL patterns in urls.py
+
+Put the implementation in .flow/detectors/django.py
+```
+
+The detector just needs to implement:
+- `detect_entrypoints(functions, classes, ...)` → list of `Entrypoint`
+- `detect_global_handlers(...)` → list of `GlobalHandler`
+
+Flow will automatically load any `.py` files in `.flow/detectors/` and use them alongside the built-in Flask/FastAPI detectors.
+
 ## Configuration
 
 Flow can be configured via `.flow/config.yaml`:
@@ -173,8 +201,8 @@ Manage stubs with `flow stubs list` and `flow stubs validate`.
 ## Development
 
 ```bash
-git clone https://github.com/yourusername/flow-analysis
-cd flow-analysis
+git clone https://github.com/ianm199/flow
+cd flow
 pip install -e ".[dev]"
 pytest
 ```
