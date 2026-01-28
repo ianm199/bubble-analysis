@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flow-analysis"
-version = "0.1.0"
+version = "0.1.1"
 description = "Static analysis tool for tracing exception flow through Python codebases"
 readme = "README.md"
 license = "MIT"
