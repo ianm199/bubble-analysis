@@ -1,0 +1,43 @@
+module: sqlalchemy
+
+functions:
+  execute:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.IntegrityError
+    - sqlalchemy.exc.ProgrammingError
+    - sqlalchemy.exc.DataError
+    - sqlalchemy.exc.DatabaseError
+
+  query:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.IntegrityError
+    - sqlalchemy.exc.ProgrammingError
+    - sqlalchemy.exc.DatabaseError
+
+  commit:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.IntegrityError
+    - sqlalchemy.exc.DatabaseError
+
+  rollback:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.DatabaseError
+
+  add:
+    - sqlalchemy.exc.IntegrityError
+
+  delete:
+    - sqlalchemy.exc.IntegrityError
+
+  flush:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.IntegrityError
+    - sqlalchemy.exc.DatabaseError
+
+  refresh:
+    - sqlalchemy.exc.OperationalError
+    - sqlalchemy.exc.InvalidRequestError
+
+  create_engine:
+    - sqlalchemy.exc.ArgumentError
+    - sqlalchemy.exc.OperationalError
