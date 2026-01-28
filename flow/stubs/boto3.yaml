@@ -1,0 +1,59 @@
+module: boto3
+
+functions:
+  client:
+    - botocore.exceptions.BotoCoreError
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.NoCredentialsError
+    - botocore.exceptions.ProfileNotFound
+
+  resource:
+    - botocore.exceptions.BotoCoreError
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.NoCredentialsError
+    - botocore.exceptions.ProfileNotFound
+
+  upload_file:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+    - boto3.exceptions.S3UploadFailedError
+
+  download_file:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  put_object:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  get_object:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  delete_object:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  list_objects:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  list_objects_v2:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  send_message:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  receive_message:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  publish:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError
+
+  invoke:
+    - botocore.exceptions.ClientError
+    - botocore.exceptions.BotoCoreError

@@ -1,0 +1,78 @@
+rules:
+  - id: routes-no-direct-db-query
+    languages: [python]
+    severity: WARNING
+    message: |
+      Direct database query in route file. Move to a service function.
+
+      Routes should be thin HTTP wrappers that call services:
+        # Bad (in routes.py)
+        users = db.query(User).filter(...).all()
+
+        # Good (in routes.py)
+        users = get_users_service(db, filters)
+    pattern: $DB.query(...)
+    paths:
+      include:
+        - "**/routes.py"
+        - "**/routes/*.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: routes-no-direct-db-add
+    languages: [python]
+    severity: WARNING
+    message: |
+      Direct db.add() in route file. Move to a service function.
+
+      Database mutations should happen in services, not routes.
+    pattern: $DB.add(...)
+    paths:
+      include:
+        - "**/routes.py"
+        - "**/routes/*.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: routes-no-direct-db-delete
+    languages: [python]
+    severity: WARNING
+    message: |
+      Direct db.delete() in route file. Move to a service function.
+    pattern: $DB.delete(...)
+    paths:
+      include:
+        - "**/routes.py"
+        - "**/routes/*.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: routes-no-direct-db-execute
+    languages: [python]
+    severity: WARNING
+    message: |
+      Direct db.execute() in route file. Move to a service function.
+
+      Raw SQL execution should be encapsulated in services.
+    pattern-either:
+      - pattern: $DB.execute(...)
+      - pattern: $CONN.execute(...)
+    paths:
+      include:
+        - "**/routes.py"
+        - "**/routes/*.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: routes-no-commit
+    languages: [python]
+    severity: WARNING
+    message: |
+      Direct db.commit() in route file. Let the service handle transactions.
+    pattern: $DB.commit()
+    paths:
+      include:
+        - "**/routes.py"
+        - "**/routes/*.py"
+      exclude:
+        - "**/tests/**"

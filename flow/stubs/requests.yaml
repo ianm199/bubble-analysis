@@ -1,0 +1,48 @@
+module: requests
+
+functions:
+  get:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  post:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  put:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  delete:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  patch:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  request:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.HTTPError
+    - requests.exceptions.RequestException
+
+  head:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.RequestException
+
+  options:
+    - requests.exceptions.ConnectionError
+    - requests.exceptions.Timeout
+    - requests.exceptions.RequestException

@@ -1,0 +1,60 @@
+module: httpx
+
+functions:
+  get:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  post:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  put:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  delete:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  patch:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  request:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.ReadTimeout
+    - httpx.WriteTimeout
+    - httpx.TimeoutException
+    - httpx.HTTPStatusError
+
+  head:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.TimeoutException
+
+  options:
+    - httpx.ConnectError
+    - httpx.ConnectTimeout
+    - httpx.TimeoutException

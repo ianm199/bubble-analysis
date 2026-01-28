@@ -1,0 +1,58 @@
+module: redis
+
+functions:
+  get:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  set:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  delete:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  hget:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  hset:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  lpush:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  rpush:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  lpop:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  rpop:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError
+
+  execute_command:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.ResponseError
+    - redis.exceptions.RedisError
+
+  ping:
+    - redis.exceptions.ConnectionError
+    - redis.exceptions.TimeoutError
+    - redis.exceptions.RedisError

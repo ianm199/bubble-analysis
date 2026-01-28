@@ -1,0 +1,59 @@
+rules:
+  - id: utils-imports-routes
+    message: "Utils importing routes creates circular dependencies. Utils should be pure functions."
+    severity: ERROR
+    languages: [python]
+    pattern-regex: from\s+\S*\.?routes\s+import
+    paths:
+      include:
+        - "**/utils/**"
+        - "**/utils.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: utils-imports-services
+    message: "Utils importing services creates circular dependencies. Utils should be pure functions."
+    severity: ERROR
+    languages: [python]
+    pattern-regex: from\s+\S*\.?services\s+import
+    paths:
+      include:
+        - "**/utils/**"
+        - "**/utils.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: utils-imports-models
+    message: "Utils importing models creates tight coupling. Utils should be pure functions."
+    severity: WARNING
+    languages: [python]
+    pattern-regex: from\s+\S*\.?models\s+import
+    paths:
+      include:
+        - "**/utils/**"
+        - "**/utils.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: services-imports-routes
+    message: "Service importing routes violates layer boundaries. Services should not depend on HTTP layer."
+    severity: ERROR
+    languages: [python]
+    pattern-regex: from\s+\S*\.?routes\s+import
+    paths:
+      include:
+        - "**/services/**"
+        - "**/service.py"
+      exclude:
+        - "**/tests/**"
+
+  - id: models-imports-services
+    message: "Model importing services violates layer boundaries. Models are data definitions only."
+    severity: ERROR
+    languages: [python]
+    pattern-regex: from\s+\S*\.?services\s+import
+    paths:
+      include:
+        - "**/models.py"
+      exclude:
+        - "**/tests/**"
