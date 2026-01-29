@@ -7,7 +7,7 @@ import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
 from flow.detectors import detect_entrypoints, detect_global_handlers
-from flow.loader import DetectorRegistry, load_detectors
+from flow.loader import load_detectors
 from flow.models import (
     CallSite,
     CatchSite,
@@ -130,13 +130,11 @@ class CodeExtractor(cst.CSTVisitor):
         bases = self._class_bases.get(class_name, [])
         abstract_methods = self._abstract_methods.get(class_name, set())
 
-        is_abstract = (
-            len(abstract_methods) > 0 or
-            "ABC" in bases or
-            "abc.ABC" in bases
-        )
+        is_abstract = len(abstract_methods) > 0 or "ABC" in bases or "abc.ABC" in bases
 
-        qualified_name = ".".join(self._class_stack + [class_name]) if self._class_stack else class_name
+        qualified_name = (
+            ".".join(self._class_stack + [class_name]) if self._class_stack else class_name
+        )
 
         self.classes.append(
             ClassDef(

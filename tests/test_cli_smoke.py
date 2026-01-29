@@ -17,9 +17,9 @@ def test_cli_stats_json():
     assert "functions" in data["results"]
 
 
-def test_cli_entrypoints_runs():
-    """Entrypoints command runs."""
-    result = run_cli("entrypoints")
+def test_cli_flask_entrypoints_runs():
+    """Flask entrypoints command runs."""
+    result = run_cli("flask", "entrypoints")
     assert result.returncode == 0
 
 

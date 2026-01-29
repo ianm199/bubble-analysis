@@ -3,6 +3,32 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from flow.integrations.base import (
+    Entrypoint,
+    EntrypointKind,
+    GlobalHandler,
+)
+
+__all__ = [
+    "FunctionDef",
+    "ClassDef",
+    "RaiseSite",
+    "CatchSite",
+    "ResolutionKind",
+    "CallSite",
+    "ResolutionEdge",
+    "ExceptionEvidence",
+    "compute_confidence",
+    "Entrypoint",
+    "EntrypointKind",
+    "GlobalHandler",
+    "DependencyEdge",
+    "ImportInfo",
+    "ClassHierarchy",
+    "ExceptionHierarchy",
+    "ProgramModel",
+]
+
 
 @dataclass
 class FunctionDef:
@@ -110,27 +136,6 @@ def compute_confidence(edges: list[ResolutionEdge]) -> Literal["high", "medium",
     if any(e.resolution_kind == "return_type" for e in edges):
         return "medium"
     return "high"
-
-
-@dataclass
-class Entrypoint:
-    """An entrypoint where external input enters the program."""
-
-    file: str
-    function: str
-    line: int
-    kind: Literal["http_route", "queue_handler", "cli_script", "scheduled_job", "test", "unknown"]
-    metadata: dict[str, str] = field(default_factory=dict)
-
-
-@dataclass
-class GlobalHandler:
-    """A global exception handler (e.g., Flask @errorhandler)."""
-
-    file: str
-    line: int
-    function: str
-    handled_type: str
 
 
 @dataclass

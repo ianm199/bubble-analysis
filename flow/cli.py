@@ -18,19 +18,37 @@ HELP_TEXT = """Exception flow analysis for Python codebases.
 
 **Quick start:**
 ```
-flow audit                    # Check all entrypoints for escaping exceptions
+flow flask audit              # Check Flask routes for escaping exceptions
+flow fastapi audit            # Check FastAPI routes for escaping exceptions
+flow cli audit                # Check CLI scripts for escaping exceptions
 flow escapes <function>       # Deep dive into one function
 ```
 
 **Typical workflow:**
 ```
-flow entrypoints              # See what routes/scripts exist
-flow audit                    # Find which have uncaught exceptions
+flow flask entrypoints        # See what Flask routes exist
+flow flask audit              # Find which have uncaught exceptions
 flow escapes <function>       # Investigate a specific one
 flow trace <function>         # Visualize the call tree
 ```
 
-**Supported entrypoints:** Flask routes, FastAPI routes, CLI scripts
+**Core commands (framework-agnostic):**
+```
+flow raises <Exception>       # Where is this raised?
+flow escapes <function>       # What can escape from this function?
+flow callers <function>       # Who calls this?
+flow catches <Exception>      # Where is this caught?
+flow trace <function>         # Call tree visualization
+flow exceptions               # Exception hierarchy
+flow stats                    # Codebase statistics
+```
+
+**Framework-specific commands:**
+```
+flow flask audit/entrypoints/routes-to
+flow fastapi audit/entrypoints/routes-to
+flow cli audit/entrypoints/scripts-to
+```
 
 **All commands support:** `-f json` for structured output
 """
@@ -45,6 +63,19 @@ app = typer.Typer(
 console = Console()
 
 
+def _register_integration_subcommands() -> None:
+    """Register integration CLI subcommands."""
+    from flow.integrations import get_registered_integrations, load_builtin_integrations
+
+    load_builtin_integrations()
+
+    for integration in get_registered_integrations():
+        app.add_typer(integration.cli_app, name=integration.name)
+
+
+_register_integration_subcommands()
+
+
 def build_model(directory: Path, use_cache: bool = True) -> ProgramModel:
     """Build the program model from a directory."""
     with console.status(f"[bold blue]Analyzing[/bold blue] {directory.name}/..."):
@@ -52,31 +83,14 @@ def build_model(directory: Path, use_cache: bool = True) -> ProgramModel:
 
 
 @app.command()
-def audit(
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
-    no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
-) -> None:
-    """Check all entrypoints for escaping exceptions.
-
-    Scans every HTTP route and CLI script, reports which have uncaught exceptions.
-    This is the recommended starting point for auditing exception handling.
-
-    Example:
-        flow audit
-        flow audit -d /path/to/project
-    """
-    directory = directory.resolve()
-    model = build_model(directory, use_cache=not no_cache)
-    result = queries.audit_entrypoints(model)
-    formatters.audit(result, output_format, directory, console)
-
-
-@app.command()
 def raises(
     exception_type: Annotated[str, typer.Argument(help="Exception type to search for")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
-    include_subclasses: Annotated[bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")] = False,
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
+    include_subclasses: Annotated[
+        bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")
+    ] = False,
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -89,7 +103,9 @@ def raises(
 
 @app.command()
 def exceptions(
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -102,7 +118,9 @@ def exceptions(
 
 @app.command()
 def stats(
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -116,9 +134,13 @@ def stats(
 @app.command()
 def callers(
     function_name: Annotated[str, typer.Argument(help="Function name to find callers of")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
-    show_resolution: Annotated[bool, typer.Option("--show-resolution", "-r", help="Show resolution details")] = False,
+    show_resolution: Annotated[
+        bool, typer.Option("--show-resolution", "-r", help="Show resolution details")
+    ] = False,
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
     """Find all places where a function is called."""
@@ -128,44 +150,26 @@ def callers(
     formatters.callers(result, output_format, directory, console, show_resolution)
 
 
-@app.command(name="entrypoints-to")
-def entrypoints_to(
-    exception_type: Annotated[str, typer.Argument(help="Exception type to trace")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
-    include_subclasses: Annotated[bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")] = False,
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
-    no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
-) -> None:
-    """Trace which HTTP entrypoints can reach a given exception."""
-    directory = directory.resolve()
-    model = build_model(directory, use_cache=not no_cache)
-    result = queries.trace_entrypoints_to(model, exception_type, include_subclasses)
-    formatters.entrypoints_to(result, output_format, directory, console)
-
-
-@app.command()
-def entrypoints(
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
-    no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
-) -> None:
-    """List all entrypoints (HTTP routes and CLI scripts) in the codebase."""
-    directory = directory.resolve()
-    model = build_model(directory, use_cache=not no_cache)
-    result = queries.list_entrypoints(model)
-    formatters.entrypoints(result, output_format, directory, console)
-
-
 @app.command()
 def escapes(
     function_name: Annotated[str, typer.Argument(help="Function or route to analyze")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
-    strict: Annotated[bool, typer.Option("--strict", help="High precision - only resolved calls")] = False,
-    aggressive: Annotated[bool, typer.Option("--aggressive", help="High recall - include fuzzy matches")] = False,
+    strict: Annotated[
+        bool, typer.Option("--strict", help="High precision - only resolved calls")
+    ] = False,
+    aggressive: Annotated[
+        bool, typer.Option("--aggressive", help="High recall - include fuzzy matches")
+    ] = False,
 ) -> None:
-    """Show which exceptions can escape from a function or route."""
+    """Show which exceptions can escape from a function.
+
+    This is the core (framework-agnostic) version. For framework-aware auditing,
+    use the integration commands (e.g., flow flask audit).
+    """
     from flow.config import load_config
 
     directory = directory.resolve()
@@ -186,8 +190,12 @@ def escapes(
 @app.command()
 def catches(
     exception_type: Annotated[str, typer.Argument(help="Exception type to search for")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
-    include_subclasses: Annotated[bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")] = False,
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
+    include_subclasses: Annotated[
+        bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")
+    ] = False,
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -201,7 +209,9 @@ def catches(
 @app.command()
 def cache(
     action: Annotated[str, typer.Argument(help="Action: clear or stats")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to manage cache for")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to manage cache for")
+    ] = Path("."),
 ) -> None:
     """Manage the extraction cache."""
     from flow.cache import FileCache
@@ -236,9 +246,13 @@ def cache(
 @app.command()
 def trace(
     function_name: Annotated[str, typer.Argument(help="Function or route to trace")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     depth: Annotated[int, typer.Option("--depth", help="Maximum call depth")] = 10,
-    show_all: Annotated[bool, typer.Option("--all", "-a", help="Show all calls, not just exception-raising paths")] = False,
+    show_all: Annotated[
+        bool, typer.Option("--all", "-a", help="Show all calls, not just exception-raising paths")
+    ] = False,
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -252,7 +266,9 @@ def trace(
 @app.command()
 def subclasses(
     class_name: Annotated[str, typer.Argument(help="Base class name to find subclasses of")],
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to analyze")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to analyze")
+    ] = Path("."),
     output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
@@ -265,7 +281,9 @@ def subclasses(
 
 @app.command()
 def init(
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Directory to initialize")] = Path("."),
+    directory: Annotated[
+        Path, typer.Option("--directory", "-d", help="Directory to initialize")
+    ] = Path("."),
 ) -> None:
     """Initialize .flow/ directory with detector templates."""
     directory = directory.resolve()
@@ -288,7 +306,7 @@ def init(
     flow_dir.mkdir(parents=True, exist_ok=True)
     detectors_dir.mkdir(parents=True, exist_ok=True)
 
-    config_content = f'''# Flow analysis configuration for {directory.name}
+    config_content = f"""# Flow analysis configuration for {directory.name}
 version: "0.1"
 
 # Frameworks detected (used for default detectors)
@@ -311,10 +329,10 @@ exclude:
 # Base exception classes to track (add your custom exceptions here)
 exception_bases:
   - Exception
-'''
+"""
 
     (flow_dir / "config.yaml").write_text(config_content)
-    console.print(f"  [green]Created[/green] .flow/config.yaml")
+    console.print("  [green]Created[/green] .flow/config.yaml")
 
     example_detector = '''"""Example custom detector for project-specific patterns."""
 
@@ -330,23 +348,25 @@ class ExampleCeleryTaskDetector(EntrypointDetector):
 '''
 
     (detectors_dir / "_example.py").write_text(example_detector)
-    console.print(f"  [green]Created[/green] .flow/detectors/_example.py")
+    console.print("  [green]Created[/green] .flow/detectors/_example.py")
 
-    readme_content = '''# Custom Detectors
+    readme_content = """# Custom Detectors
 
 Create Python files here to detect project-specific patterns.
 See _example.py for a template.
-'''
+"""
 
     (detectors_dir / "README.md").write_text(readme_content)
-    console.print(f"  [green]Created[/green] .flow/detectors/README.md")
+    console.print("  [green]Created[/green] .flow/detectors/README.md")
 
     console.print()
     console.print("[bold green]Initialization complete![/bold green]")
     console.print()
     console.print("[dim]Next steps:[/dim]")
     console.print("  1. Review .flow/config.yaml")
-    console.print("  2. Run 'flow entrypoints' to verify detection")
+    console.print(
+        "  2. Run 'flow flask entrypoints' or 'flow fastapi entrypoints' to verify detection"
+    )
     console.print()
 
 
@@ -354,7 +374,9 @@ See _example.py for a template.
 def stubs(
     action: Annotated[str, typer.Argument(help="Action: list, init, or validate")],
     library: Annotated[str | None, typer.Argument(help="Library name for init action")] = None,
-    directory: Annotated[Path, typer.Option("--directory", "-d", help="Project directory")] = Path("."),
+    directory: Annotated[Path, typer.Option("--directory", "-d", help="Project directory")] = Path(
+        "."
+    ),
 ) -> None:
     """Manage exception stubs for external libraries."""
     import shutil
@@ -379,7 +401,9 @@ def stubs(
         console.print("\n[bold]Loaded exception stubs:[/bold]\n")
         for module, functions in sorted(stub_library.stubs.items()):
             exc_count = sum(len(excs) for excs in functions.values())
-            console.print(f"  [cyan]{module}[/cyan]: {len(functions)} functions, {exc_count} exceptions")
+            console.print(
+                f"  [cyan]{module}[/cyan]: {len(functions)} functions, {exc_count} exceptions"
+            )
         console.print()
 
     elif action == "init":
@@ -415,7 +439,7 @@ def stubs(
                         for error in errors:
                             console.print(f"  - {error}")
                     else:
-                        console.print(f"[green]✓[/green] {yaml_file.name}")
+                        console.print(f"[green]v[/green] {yaml_file.name}")
 
         if not errors_found:
             console.print("\n[green]All stub files are valid[/green]")
