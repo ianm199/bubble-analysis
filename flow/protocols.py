@@ -17,9 +17,7 @@ Example usage in .flow/detectors/entrypoints.py:
 
 from typing import Protocol
 
-import libcst as cst
-
-from flow.models import Entrypoint, GlobalHandler
+from flow.integrations.base import Entrypoint, GlobalHandler
 
 
 class EntrypointDetector(Protocol):

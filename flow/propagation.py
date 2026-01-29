@@ -5,6 +5,7 @@ Computes which exceptions can escape from each function and entrypoint.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
@@ -74,7 +75,9 @@ def build_forward_call_graph(model: ProgramModel) -> dict[str, set[str]]:
     return graph
 
 
-def build_reverse_call_graph(model: ProgramModel) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+def build_reverse_call_graph(
+    model: ProgramModel,
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Build maps from callee to callers (both qualified and name-based)."""
     qualified_graph: dict[str, set[str]] = {}
     name_graph: dict[str, set[str]] = {}
@@ -241,7 +244,7 @@ def propagate_exceptions(
     model: ProgramModel,
     max_iterations: int = 100,
     resolution_mode: ResolutionMode = "default",
-    stub_library: "StubLibrary | None" = None,
+    stub_library: StubLibrary | None = None,
 ) -> PropagationResult:
     """
     Propagate exceptions through the call graph.
@@ -254,7 +257,6 @@ def propagate_exceptions(
     - default: Normal propagation with name fallback
     - aggressive: Include fuzzy matching (not yet implemented)
     """
-    from flow.stubs import StubLibrary
 
     direct_raises = compute_direct_raises(model)
     catches_by_function = compute_catches_by_function(model)
@@ -270,10 +272,7 @@ def propagate_exceptions(
         propagated_evidence[func] = {}
         for exc_type in raises:
             for rs in model.raise_sites:
-                if (
-                    f"{rs.file}::{rs.function}" == func
-                    and rs.exception_type == exc_type
-                ):
+                if f"{rs.file}::{rs.function}" == func and rs.exception_type == exc_type:
                     key = (exc_type, rs.file, rs.line)
                     propagated_evidence[func][key] = PropagatedRaise(
                         exception_type=exc_type,
@@ -343,9 +342,7 @@ def propagate_exceptions(
                             if stub_exceptions:
                                 callee_exceptions = set(stub_exceptions)
 
-                    if resolution_mode == "strict" and (
-                        used_name_fallback or is_polymorphic
-                    ):
+                    if resolution_mode == "strict" and (used_name_fallback or is_polymorphic):
                         continue
 
                     for exc_type in callee_exceptions:
@@ -353,9 +350,7 @@ def propagate_exceptions(
                         is_caught = False
 
                         for catch_site in catches:
-                            if exception_is_caught(
-                                exc_type, catch_site, model.exception_hierarchy
-                            ):
+                            if exception_is_caught(exc_type, catch_site, model.exception_hierarchy):
                                 if not catch_site.has_reraise:
                                     is_caught = True
                                     break
@@ -365,9 +360,7 @@ def propagate_exceptions(
                             changed = True
 
                             caller_simple = (
-                                caller.split("::")[-1].split(".")[-1]
-                                if "::" in caller
-                                else caller
+                                caller.split("::")[-1].split(".")[-1] if "::" in caller else caller
                             )
                             if caller_simple not in name_to_qualified:
                                 name_to_qualified[caller_simple] = []
@@ -431,27 +424,34 @@ def compute_reachable_functions(
             continue
         reachable.add(current)
 
-        current_simple = current.split("::")[-1].split(".")[-1] if "::" in current else current.split(".")[-1]
+        current_simple = (
+            current.split("::")[-1].split(".")[-1] if "::" in current else current.split(".")[-1]
+        )
         reachable.add(current_simple)
 
         callees = forward_graph.get(current, set())
         if not callees:
             for key in forward_graph:
-                key_simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+                key_simple = (
+                    key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+                )
                 if key_simple == current_simple:
                     callees = forward_graph[key]
                     break
 
         for callee in callees:
             expanded = expand_polymorphic_call(
-                callee, model.exception_hierarchy,
-                {k: name_to_qualified.get(k, []) for k in name_to_qualified}
+                callee,
+                model.exception_hierarchy,
+                {k: name_to_qualified.get(k, []) for k in name_to_qualified},
             )
 
             for impl in expanded:
                 if impl not in reachable:
                     worklist.append(impl)
-                impl_simple = impl.split("::")[-1].split(".")[-1] if "::" in impl else impl.split(".")[-1]
+                impl_simple = (
+                    impl.split("::")[-1].split(".")[-1] if "::" in impl else impl.split(".")[-1]
+                )
                 for qualified in name_to_qualified.get(impl_simple, []):
                     if qualified not in reachable:
                         worklist.append(qualified)
@@ -464,20 +464,30 @@ def compute_exception_flow(
     model: ProgramModel,
     propagation: PropagationResult,
     detected_frameworks: set[str] | None = None,
+    get_framework_response: Callable[[str], str | None] | None = None,
 ) -> ExceptionFlow:
     """
     Compute the exception flow for a specific function.
 
-    Returns which exceptions are:
-    - caught locally (by try/except in the function)
-    - caught by global handlers
-    - framework_handled (converted to HTTP response by framework)
-    - uncaught (will escape)
+    This is the core (framework-agnostic) version. For integration-aware
+    exception flow, use flow.integrations.queries._compute_exception_flow_for_integration.
+
+    Args:
+        function_name: Name of the function to analyze
+        model: The program model
+        propagation: Propagation analysis results
+        detected_frameworks: (Deprecated) Set of detected frameworks
+        get_framework_response: Optional callback to check framework-handled exceptions
+
+    Returns:
+        ExceptionFlow with exceptions categorized as:
+        - caught_by_global: Caught by global handlers
+        - framework_handled: Converted to HTTP response (if get_framework_response provided)
+        - uncaught: Will escape
     """
-    from flow.detectors import FRAMEWORK_EXCEPTION_RESPONSES
+    _ = detected_frameworks
 
     flow = ExceptionFlow()
-    frameworks = detected_frameworks or model.detected_frameworks
 
     func_key = None
     for key in propagation.propagated_raises:
@@ -507,10 +517,7 @@ def compute_exception_flow(
         raise_sites = [
             r
             for r in model.raise_sites
-            if (
-                r.exception_type == exc_type
-                or r.exception_type.split(".")[-1] == exc_simple
-            )
+            if (r.exception_type == exc_type or r.exception_type.split(".")[-1] == exc_simple)
             and (r.function in reachable or f"{r.file}::{r.function}" in reachable)
         ]
 
@@ -546,13 +553,14 @@ def compute_exception_flow(
             flow.caught_by_global[exc_type].extend(raise_sites)
             continue
 
-        framework_response = _get_framework_response(exc_type, frameworks)
-        if framework_response:
-            if exc_type not in flow.framework_handled:
-                flow.framework_handled[exc_type] = []
-            for rs in raise_sites:
-                flow.framework_handled[exc_type].append((rs, framework_response))
-            continue
+        if get_framework_response:
+            framework_response = get_framework_response(exc_type)
+            if framework_response:
+                if exc_type not in flow.framework_handled:
+                    flow.framework_handled[exc_type] = []
+                for rs in raise_sites:
+                    flow.framework_handled[exc_type].append((rs, framework_response))
+                continue
 
         if exc_type not in flow.uncaught:
             flow.uncaught[exc_type] = []
@@ -561,28 +569,10 @@ def compute_exception_flow(
     return flow
 
 
-def _get_framework_response(
-    exc_type: str, frameworks: set[str]
-) -> str | None:
-    """Check if an exception is handled by a framework and return the HTTP response."""
-    from flow.detectors import FRAMEWORK_EXCEPTION_RESPONSES
-
-    exc_simple = exc_type.split(".")[-1]
-
-    for framework in frameworks:
-        responses = FRAMEWORK_EXCEPTION_RESPONSES.get(framework, {})
-        for handled_type, response in responses.items():
-            handled_simple = handled_type.split(".")[-1]
-            if exc_simple == handled_simple or exc_type == handled_type:
-                return response
-
-    return None
-
-
 def get_exceptions_for_entrypoint(
     entrypoint_function: str,
     model: ProgramModel,
 ) -> ExceptionFlow:
-    """Get the exception flow for an entrypoint."""
+    """Get the exception flow for an entrypoint (deprecated, use integrations instead)."""
     propagation = propagate_exceptions(model)
     return compute_exception_flow(entrypoint_function, model, propagation)

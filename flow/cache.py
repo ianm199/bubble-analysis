@@ -65,15 +65,11 @@ class FileCache:
         return db
 
     def _validate_version(self, db: sqlite3.Connection) -> bool:
-        row = db.execute(
-            "SELECT value FROM cache_meta WHERE key = 'version'"
-        ).fetchone()
+        row = db.execute("SELECT value FROM cache_meta WHERE key = 'version'").fetchone()
         if row is None or row[0] != CACHE_VERSION:
             return False
 
-        row = db.execute(
-            "SELECT value FROM cache_meta WHERE key = 'flow_version'"
-        ).fetchone()
+        row = db.execute("SELECT value FROM cache_meta WHERE key = 'flow_version'").fetchone()
         if row is None or row[0] != __version__:
             return False
 

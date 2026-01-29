@@ -6,7 +6,7 @@ and returns a typed result dataclass. No formatting here.
 
 from difflib import get_close_matches
 
-from flow.models import Entrypoint, ProgramModel, RaiseSite
+from flow.models import Entrypoint, ProgramModel
 from flow.propagation import (
     build_forward_call_graph,
     build_reverse_call_graph,
@@ -154,9 +154,7 @@ def get_callers_from_graphs(
     callers = qualified_graph.get(function_name, set())
     if not callers:
         simple_name = (
-            function_name.split("::")[-1].split(".")[-1]
-            if "::" in function_name
-            else function_name
+            function_name.split("::")[-1].split(".")[-1] if "::" in function_name else function_name
         )
         callers = name_graph.get(simple_name, set())
     return callers
@@ -221,9 +219,7 @@ def trace_entrypoints_to(
                 if "::" in endpoint:
                     entrypoints_reached.add(endpoint.split("::")[-1].split(".")[-1])
 
-        matching_entrypoints = [
-            e for e in model.entrypoints if e.function in entrypoints_reached
-        ]
+        matching_entrypoints = [e for e in model.entrypoints if e.function in entrypoints_reached]
 
         traces.append(
             EntrypointTrace(
@@ -281,11 +277,13 @@ def audit_entrypoints(model: ProgramModel) -> "AuditResult":
             real_uncaught = {k: v for k, v in flow.uncaught.items() if k not in reraise_patterns}
 
             if real_uncaught:
-                issues.append(AuditIssue(
-                    entrypoint=entrypoint,
-                    uncaught=real_uncaught,
-                    caught=flow.caught_by_global,
-                ))
+                issues.append(
+                    AuditIssue(
+                        entrypoint=entrypoint,
+                        uncaught=real_uncaught,
+                        caught=flow.caught_by_global,
+                    )
+                )
             else:
                 clean_count += 1
         else:
@@ -384,10 +382,7 @@ def find_function_key(
 
     for call_site in model.call_sites:
         if call_site.caller_function == function_name:
-            return (
-                call_site.caller_qualified
-                or f"{call_site.file}::{call_site.caller_function}"
-            )
+            return call_site.caller_qualified or f"{call_site.file}::{call_site.caller_function}"
 
     return None
 
@@ -401,14 +396,10 @@ def get_direct_raises_for_key(
         return direct_raises[func_key]
 
     simple_name = (
-        func_key.split("::")[-1].split(".")[-1]
-        if "::" in func_key
-        else func_key.split(".")[-1]
+        func_key.split("::")[-1].split(".")[-1] if "::" in func_key else func_key.split(".")[-1]
     )
     for key, raises in direct_raises.items():
-        key_simple = (
-            key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
-        )
+        key_simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
         if key_simple == simple_name:
             return raises
 
@@ -465,9 +456,7 @@ def _build_trace_node(
     visited = visited | {func_key}
 
     simple_name = (
-        func_key.split("::")[-1].split(".")[-1]
-        if "::" in func_key
-        else func_key.split(".")[-1]
+        func_key.split("::")[-1].split(".")[-1] if "::" in func_key else func_key.split(".")[-1]
     )
     this_direct = get_direct_raises_for_key(func_key, direct_raises)
     this_propagated = propagated_raises.get(func_key, set())
@@ -475,11 +464,7 @@ def _build_trace_node(
     callees = forward_graph.get(func_key, set())
     if not callees:
         for key in forward_graph:
-            key_simple = (
-                key.split("::")[-1].split(".")[-1]
-                if "::" in key
-                else key.split(".")[-1]
-            )
+            key_simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
             if key_simple == simple_name:
                 callees = forward_graph[key]
                 break

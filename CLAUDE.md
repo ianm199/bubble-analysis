@@ -65,18 +65,38 @@ This pattern informed the layered design. Each layer handles one hop in the chai
 
 ```
 flow/
-├── models.py       # Data structures (CallSite, RaiseSite, ResolutionEdge, etc.)
+├── models.py       # Core data structures (CallSite, RaiseSite, etc.)
 ├── extractor.py    # libcst visitors that build the program model
 ├── propagation.py  # Exception flow computation (fixpoint iteration)
-├── detectors.py    # Framework-specific entrypoint detection + exception mappings
 ├── results.py      # Typed dataclasses for query results (the contract)
-├── queries.py      # Business logic - all query functions
-├── formatters.py   # Output rendering (text and JSON)
+├── queries.py      # Core query functions (raises, callers, escapes, etc.)
+├── formatters.py   # Core output rendering (text and JSON)
 ├── config.py       # Configuration loading (.flow/config.yaml)
 ├── stubs.py        # Exception stub loading for external libraries
 ├── stubs/          # Built-in YAML stubs (requests, sqlalchemy, etc.)
 ├── cache.py        # SQLite-based caching
-└── cli.py          # Thin layer: arg parsing + wiring only
+├── cli.py          # Core CLI + integration subcommand registration
+│
+└── integrations/   # Framework-specific code (Flask, FastAPI, CLI scripts)
+    ├── __init__.py     # Integration registry and discovery
+    ├── base.py         # Entrypoint, GlobalHandler, Integration protocol
+    ├── models.py       # AuditResult, EntrypointsResult, etc.
+    ├── queries.py      # Shared audit/entrypoint logic for integrations
+    ├── formatters.py   # Shared integration formatters
+    │
+    ├── flask/          # Flask integration
+    │   ├── detector.py     # FlaskRouteVisitor, FlaskErrorHandlerVisitor
+    │   ├── semantics.py    # EXCEPTION_RESPONSES (HTTPException mappings)
+    │   └── cli.py          # `flow flask` subcommands
+    │
+    ├── fastapi/        # FastAPI integration
+    │   ├── detector.py     # FastAPIRouteVisitor, FastAPIExceptionHandlerVisitor
+    │   ├── semantics.py    # EXCEPTION_RESPONSES
+    │   └── cli.py          # `flow fastapi` subcommands
+    │
+    └── cli_scripts/    # CLI script integration
+        ├── detector.py     # CLIEntrypointVisitor
+        └── cli.py          # `flow cli` subcommands
 ```
 
 ### Architecture: Clean Separation of Concerns
@@ -130,13 +150,15 @@ Exception flow computation using fixpoint iteration:
 - `build_reverse_call_graph()`: Map from callee to callers (qualified + name-based)
 - `compute_direct_raises()`: Exceptions raised directly in each function
 - `propagate_exceptions()`: Fixpoint iteration to propagate through call graph (accepts `resolution_mode` and `stub_library` params)
-- `compute_exception_flow()`: Categorize exceptions as caught locally, by global handler, framework-handled, or uncaught
+- `compute_exception_flow()`: Categorize exceptions as caught locally, or uncaught (framework-specific categorization is in integrations/)
+- `compute_reachable_functions()`: Find all functions reachable from a given function
 
 Trust features:
 - `PropagatedRaise`: Tracks exceptions with their full call path through propagation
 - Resolution mode filtering: strict (high precision), default, aggressive (high recall)
 - Stub integration: External library exceptions injected via `StubLibrary`
-- Framework-handled detection: HTTPException → HTTP response mapping
+
+Framework-specific exception handling (HTTPException → HTTP response) is now in `integrations/queries.py`.
 
 ### results.py
 
@@ -147,22 +169,39 @@ Typed dataclasses defining the contract between queries and formatters:
 
 ### queries.py
 
-All business logic lives here. Each function takes a `ProgramModel` and returns a typed result:
+Core query logic lives here. Each function takes a `ProgramModel` and returns a typed result:
 - `find_raises()` → `RaisesResult`
 - `find_callers()` → `CallersResult`
-- `audit_entrypoints()` → `AuditResult`
+- `find_escapes()` → `EscapesResult`
 - `trace_function()` → `TraceResult`
 
 Helper functions (prefixed with `_`) handle graph traversal, name matching, etc.
 
+Integration-specific queries (audit, entrypoints, routes-to) live in `integrations/queries.py`.
+
 ### formatters.py
 
-All output rendering (text and JSON). One function per result type:
+Core output rendering (text and JSON). One function per result type:
 - `raises(result, output_format, directory, console)`
 - `callers(result, output_format, directory, console, show_resolution)`
-- `audit(result, output_format, directory, console)`
+- `escapes(result, output_format, directory, console)`
 
-No business logic here - just formatting decisions.
+Integration-specific formatters live in `integrations/formatters.py`.
+
+No business logic in formatters - just formatting decisions.
+
+### integrations/
+
+Framework-specific code is isolated in the `integrations/` directory:
+- **base.py**: Defines `Entrypoint`, `GlobalHandler`, and `Integration` protocol
+- **models.py**: `AuditResult`, `EntrypointsResult`, `RoutesToResult`
+- **queries.py**: Shared `audit_integration()`, `list_integration_entrypoints()`, `trace_routes_to_exception()`
+- **formatters.py**: Shared formatting for integration results
+
+Each framework (flask/, fastapi/, cli_scripts/) has:
+- **detector.py**: AST visitors to detect routes/handlers
+- **semantics.py**: Exception-to-HTTP-response mappings
+- **cli.py**: Subcommands registered under `flow <framework>`
 
 ### cli.py
 
@@ -174,25 +213,43 @@ Thin layer (~300 lines) that only does:
 
 ## Commands
 
+### Core Commands (framework-agnostic)
+
 ```bash
-flow audit                         # Check all entrypoints for escaping exceptions (start here)
 flow raises <Exception> [-s]      # Find where exception is raised (-s includes subclasses)
-flow exceptions                    # Show exception class hierarchy
-flow callers <function> [-r]      # Who calls this function? (-r shows resolution kind)
-flow entrypoints                   # List HTTP routes and CLI scripts
-flow entrypoints-to <Exception>   # Which routes can trigger this exception?
 flow escapes <function>           # What exceptions can escape from this function?
 flow escapes <function> --strict  # High precision mode (only resolved calls)
+flow callers <function> [-r]      # Who calls this function? (-r shows resolution kind)
 flow catches <Exception>          # Where is this exception caught?
 flow trace <function>             # Visualize exception flow as a call tree
+flow exceptions                    # Show exception class hierarchy
 flow stubs list                    # Show loaded exception stubs
 flow stubs validate                # Validate stub YAML files
 flow stats                         # Codebase statistics
 ```
 
+### Framework-Specific Commands (namespaced)
+
+```bash
+# Flask
+flow flask audit                  # Check Flask routes for escaping exceptions
+flow flask entrypoints            # List Flask HTTP routes
+flow flask routes-to <Exception>  # Which Flask routes can trigger this exception?
+
+# FastAPI
+flow fastapi audit                # Check FastAPI routes for escaping exceptions
+flow fastapi entrypoints          # List FastAPI HTTP routes
+flow fastapi routes-to <Exception># Which FastAPI routes can trigger this exception?
+
+# CLI scripts (if __name__ == "__main__")
+flow cli audit                    # Check CLI scripts for escaping exceptions
+flow cli entrypoints              # List CLI scripts
+flow cli scripts-to <Exception>   # Which CLI scripts can trigger this exception?
+```
+
 **Typical workflow:**
 ```bash
-flow audit                    # Find which entrypoints have uncaught exceptions
+flow flask audit              # Find which routes have uncaught exceptions
 flow escapes <function>       # Investigate a specific one
 flow trace <function>         # Visualize the call tree
 ```
@@ -220,6 +277,7 @@ flow trace <function>         # Visualize the call tree
 - External library exception stubs (declare what `requests.get()` can raise) - see `flow stubs`
 - Confidence tiers for heuristic vs precise resolution - see `--strict` flag and confidence labels
 - Framework-handled exceptions (HTTPException → HTTP response) - auto-detected for Flask/FastAPI
+- Separation of core and integrations - framework-specific code in `flow/integrations/`
 
 ## Code Style
 

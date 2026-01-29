@@ -11,10 +11,13 @@ pip install flow-analysis
 ```
 
 ```bash
-# Check all endpoints for uncaught exceptions
-flow audit -d /path/to/project
+# Check Flask routes for uncaught exceptions
+flow flask audit -d /path/to/project
 
-# Deep dive into one endpoint
+# Check FastAPI routes
+flow fastapi audit -d /path/to/project
+
+# Deep dive into one function
 flow escapes create_user -d /path/to/project
 
 # Visualize the call tree
@@ -26,11 +29,11 @@ flow trace create_user -d /path/to/project
 Flow finds your HTTP routes and CLI scripts, traces the call graph, and reports which exceptions can escape:
 
 ```
-$ flow audit
+$ flow flask audit
 
-Scanning 23 entrypoints...
+Scanning 23 flask entrypoints...
 
-✗ 3 entrypoints have uncaught exceptions:
+3 entrypoints have uncaught exceptions:
 
   POST /users/import
     └─ FileNotFoundError (importers.py:45)
@@ -39,7 +42,7 @@ Scanning 23 entrypoints...
   GET /reports/{id}
     └─ PermissionError (auth.py:89)
 
-✓ 20 entrypoints fully covered by exception handlers
+20 entrypoints fully covered by exception handlers
 ```
 
 For a specific endpoint, see the full picture:
@@ -92,19 +95,33 @@ POST /users  → escapes: ValidationError, ConnectionError
 
 ## Commands
 
+### Core Commands (framework-agnostic)
+
 | Command | Description |
 |---------|-------------|
-| `flow audit` | Check all entrypoints for escaping exceptions |
-| `flow escapes <function>` | Show what can escape from a specific function |
-| `flow trace <function>` | Visualize exception flow as a call tree |
-| `flow entrypoints` | List all HTTP routes and CLI scripts |
 | `flow raises <exception>` | Find all places an exception is raised |
-| `flow catches <exception>` | Find all places an exception is caught |
-| `flow exceptions` | Show the exception class hierarchy |
+| `flow escapes <function>` | Show what can escape from a specific function |
 | `flow callers <function>` | Find all callers of a function |
+| `flow catches <exception>` | Find all places an exception is caught |
+| `flow trace <function>` | Visualize exception flow as a call tree |
+| `flow exceptions` | Show the exception class hierarchy |
 | `flow subclasses <class>` | Show class inheritance tree |
 | `flow stubs <action>` | Manage exception stubs (`list`, `init`, `validate`) |
 | `flow stats` | Show codebase statistics |
+
+### Framework-Specific Commands
+
+| Command | Description |
+|---------|-------------|
+| `flow flask audit` | Check Flask routes for escaping exceptions |
+| `flow flask entrypoints` | List Flask HTTP routes |
+| `flow flask routes-to <exc>` | Which Flask routes can trigger this exception? |
+| `flow fastapi audit` | Check FastAPI routes for escaping exceptions |
+| `flow fastapi entrypoints` | List FastAPI HTTP routes |
+| `flow fastapi routes-to <exc>` | Which FastAPI routes can trigger this exception? |
+| `flow cli audit` | Check CLI scripts for escaping exceptions |
+| `flow cli entrypoints` | List CLI scripts |
+| `flow cli scripts-to <exc>` | Which CLI scripts can trigger this exception? |
 
 All commands accept:
 - `-d, --directory`: Directory to analyze (default: current)

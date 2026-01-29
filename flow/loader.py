@@ -76,13 +76,13 @@ class DetectorRegistry:
         """Check if a class implements EntrypointDetector protocol."""
         if cls.__name__ in ("EntrypointDetector", "GlobalHandlerDetector"):
             return False
-        return hasattr(cls, "detect") and callable(getattr(cls, "detect"))
+        return hasattr(cls, "detect") and callable(cls.detect)
 
     def _is_global_handler_detector(self, cls: type) -> bool:
         """Check if a class implements GlobalHandlerDetector protocol."""
         if cls.__name__ in ("EntrypointDetector", "GlobalHandlerDetector"):
             return False
-        return hasattr(cls, "detect") and callable(getattr(cls, "detect"))
+        return hasattr(cls, "detect") and callable(cls.detect)
 
     def detect_entrypoints(self, source: str, file_path: str) -> list[Entrypoint]:
         """Run all custom entrypoint detectors on a source file."""

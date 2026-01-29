@@ -102,7 +102,10 @@ def audit(
                     "http_method": issue.entrypoint.metadata.get("http_method"),
                     "http_path": issue.entrypoint.metadata.get("http_path"),
                     "uncaught": {
-                        exc_type: [{"file": r.file, "line": r.line, "function": r.function} for r in raises_list]
+                        exc_type: [
+                            {"file": r.file, "line": r.line, "function": r.function}
+                            for r in raises_list
+                        ]
                         for exc_type, raises_list in issue.uncaught.items()
                     },
                 }
@@ -120,7 +123,9 @@ def audit(
     console.print(f"\n[bold]Scanning {result.total_entrypoints} entrypoints...[/bold]\n")
 
     if result.issues:
-        console.print(f"[red bold]✗ {len(result.issues)} entrypoints have uncaught exceptions:[/red bold]\n")
+        console.print(
+            f"[red bold]✗ {len(result.issues)} entrypoints have uncaught exceptions:[/red bold]\n"
+        )
 
         for issue in result.issues:
             ep = issue.entrypoint
@@ -145,7 +150,9 @@ def audit(
         console.print("[green bold]✓ All entrypoints have exception handlers[/green bold]\n")
 
     if result.clean_count > 0:
-        console.print(f"[green]✓ {result.clean_count} entrypoints fully covered by exception handlers[/green]\n")
+        console.print(
+            f"[green]✓ {result.clean_count} entrypoints fully covered by exception handlers[/green]\n"
+        )
 
     if result.issues:
         console.print("[dim]Run 'flow escapes <function>' for details on a specific route.[/dim]")
@@ -377,8 +384,10 @@ def entrypoints(
     console: Console,
 ) -> None:
     """Format entrypoints query result."""
-    total = len(result.http_routes) + len(result.cli_scripts) + sum(
-        len(v) for v in result.other.values()
+    total = (
+        len(result.http_routes)
+        + len(result.cli_scripts)
+        + sum(len(v) for v in result.other.values())
     )
 
     if output_format == "json":
@@ -433,7 +442,9 @@ def entrypoints(
         for e in sorted_scripts:
             rel = _rel_path(e.file, directory)
             if e.metadata.get("inline"):
-                console.print(f"  [magenta]{rel}[/magenta]:[bold]{e.line}[/bold] [dim](inline code)[/dim]")
+                console.print(
+                    f"  [magenta]{rel}[/magenta]:[bold]{e.line}[/bold] [dim](inline code)[/dim]"
+                )
             else:
                 console.print(f"  [magenta]{rel}[/magenta]:[bold]{e.function}[/bold]()")
         console.print()
@@ -528,16 +539,12 @@ def escapes(
                 for h in result.global_handlers
             ],
             "caught_by_global": {
-                exc_type: [
-                    {"file": r.file, "line": r.line, "function": r.function} for r in raises
-                ]
+                exc_type: [{"file": r.file, "line": r.line, "function": r.function} for r in raises]
                 for exc_type, raises in result.flow.caught_by_global.items()
             },
             "framework_handled": framework_handled_json,
             "uncaught": {
-                exc_type: [
-                    {"file": r.file, "line": r.line, "function": r.function} for r in raises
-                ]
+                exc_type: [{"file": r.file, "line": r.line, "function": r.function} for r in raises]
                 for exc_type, raises in result.flow.uncaught.items()
             },
             "evidence": evidence_json,
@@ -558,9 +565,7 @@ def escapes(
         console.print(f"\n[bold]Exceptions that can escape from {result.function_name}():[/bold]\n")
 
     has_content = (
-        result.flow.caught_by_global
-        or result.flow.uncaught
-        or result.flow.framework_handled
+        result.flow.caught_by_global or result.flow.uncaught or result.flow.framework_handled
     )
     if not has_content:
         console.print("  [dim]No escaping exceptions detected[/dim]\n")
@@ -574,8 +579,7 @@ def escapes(
                 (
                     h
                     for h in result.global_handlers
-                    if h.handled_type == exc_type
-                    or h.handled_type.split(".")[-1] == exc_simple
+                    if h.handled_type == exc_type or h.handled_type.split(".")[-1] == exc_simple
                 ),
                 None,
             )
@@ -615,17 +619,28 @@ def escapes(
                 for r in raise_sites[:3]:
                     rel = _rel_path(r.file, directory)
                     matching_evidence = next(
-                        (ev for ev in evidence_list if ev.raise_site.file == r.file and ev.raise_site.line == r.line),
+                        (
+                            ev
+                            for ev in evidence_list
+                            if ev.raise_site.file == r.file and ev.raise_site.line == r.line
+                        ),
                         None,
                     )
                     if matching_evidence and matching_evidence.call_path:
                         confidence_label = _format_confidence(matching_evidence.confidence)
-                        console.print(f"      └─ raised in: [dim]{rel}:{r.line}[/dim] ({r.function}) [{confidence_label} confidence]")
-                        path_parts = [_format_resolution_kind(e.resolution_kind) for e in matching_evidence.call_path[:4]]
+                        console.print(
+                            f"      └─ raised in: [dim]{rel}:{r.line}[/dim] ({r.function}) [{confidence_label} confidence]"
+                        )
+                        path_parts = [
+                            _format_resolution_kind(e.resolution_kind)
+                            for e in matching_evidence.call_path[:4]
+                        ]
                         if path_parts:
                             console.print(f"         call path: {' → '.join(path_parts)}")
                     else:
-                        console.print(f"      └─ raised in: [dim]{rel}:{r.line}[/dim] ({r.function})")
+                        console.print(
+                            f"      └─ raised in: [dim]{rel}:{r.line}[/dim] ({r.function})"
+                        )
                 if len(raise_sites) > 3:
                     console.print(f"      └─ [dim]...and {len(raise_sites) - 3} more[/dim]")
             console.print()
@@ -714,6 +729,7 @@ def trace(
 ) -> None:
     """Format trace query result."""
     if output_format == "json":
+
         def node_to_dict(node: TraceNode | PolymorphicNode) -> dict:
             if isinstance(node, PolymorphicNode):
                 return {
@@ -825,7 +841,9 @@ def subclasses(
     if result.is_abstract:
         console.print("[dim]  (abstract class)[/dim]")
     if result.abstract_methods:
-        console.print(f"[dim]  Abstract methods: {', '.join(sorted(result.abstract_methods))}[/dim]")
+        console.print(
+            f"[dim]  Abstract methods: {', '.join(sorted(result.abstract_methods))}[/dim]"
+        )
     console.print()
 
     if not result.subclasses:
