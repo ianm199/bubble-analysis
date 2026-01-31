@@ -7,36 +7,122 @@ This document provides instructions for systematically testing Flow against real
 ```bash
 # From any directory, run the dogfooding agent
 cd /tmp
-git clone <target-repo>
+git clone --depth 1 <target-repo>
 cd <target-repo>
-flow stats
+flow stats --no-cache
 flow <framework> audit  # flask, fastapi, or cli
 ```
+
+## Learnings & Tips (Read This First!)
+
+These tips come from completed dogfooding runs and will save you time:
+
+### For Web Apps (Flask/FastAPI)
+```bash
+flow stats --no-cache              # Basic metrics
+flow <framework> entrypoints       # See routes
+flow <framework> audit             # Find issues
+flow <framework> routes-to <Exc>   # Trace specific exception to routes
+flow escapes <function>            # Deep dive on specific function
+```
+
+### For Libraries (no HTTP routes)
+```bash
+flow stats --no-cache              # Basic metrics
+flow exceptions                    # Exception hierarchy (very useful!)
+flow raises <Exception> -s         # Find all raises of exception + subclasses
+flow escapes <public_function>     # What can escape from public API
+flow callers <function> -r         # Who calls this, with resolution info
+```
+
+### Key Insights
+- **Low confidence is OK for libraries** - name_fallback resolution is expected when there are no type hints
+- **`flow exceptions`** - extremely valuable for libraries, shows full hierarchy
+- **`--strict` mode** - often too aggressive, filters out real findings
+- **Build time** - expect ~1.5s per 1k LOC on first run
+- **Always use `--depth 1`** when cloning to save time
+
+## Completed Dogfooding Results
+
+### httpbin (Flask) ✅
+
+**Basic Info:**
+- LOC: 3,292
+- Framework: Flask
+- Model build time: 5.9s
+- Functions detected: 167
+- Entrypoints detected: 58 (55 HTTP routes, 3 CLI scripts)
+
+**Audit Results:**
+- Routes with escaping exceptions: 3 (digest-auth variants)
+- Strict mode findings: 0 (too aggressive)
+
+**Validation:**
+- Route-level precision: **100%** (3/3 true positives)
+- Raise-site precision: **75%** (3/4 true positives)
+
+**Bugs Found in Flow:**
+- `routes-to` command was broken (fixed in PR)
+- `--strict` mode too conservative
+
+**Real Bug Found:**
+- digest-auth endpoints can return 500 errors when clients send malformed Authorization headers
+
+**Verdict:** ✅ Yes - found real issues
+
+---
+
+### requests (Library) ✅
+
+**Basic Info:**
+- LOC: 11,152
+- Framework: None (library)
+- Model build time: 15s
+- Functions detected: 240
+- Classes detected: 45
+- Entrypoints: 2 CLI scripts only
+
+**Key Findings:**
+- `flow exceptions` correctly parsed full RequestException hierarchy (20+ exception types)
+- `flow raises RequestException -s` found all 34 raise sites
+- `flow escapes get` shows complete list of what can escape from public API
+- All findings are "low confidence" due to name_fallback (expected for untyped library)
+
+**Most Useful Commands for Libraries:**
+```bash
+flow exceptions                    # Shows: RequestException -> ConnectionError -> SSLError etc
+flow raises RequestException -s    # All 34 locations where exceptions are raised
+flow escapes get                   # What can escape from requests.get()
+```
+
+**Verdict:** ✅ Yes - useful for library authors documenting exception behavior
+
+---
 
 ## Target Repositories
 
 ### Tier 1: Validation (Flask/FastAPI - should work)
 
-| Repository | Framework | Size | Clone Command |
-|------------|-----------|------|---------------|
-| httpbin | Flask | Small | `git clone https://github.com/postmanlabs/httpbin` |
-| Starlette | FastAPI-adjacent | Medium | `git clone https://github.com/encode/starlette` |
-| Label Studio | Flask | Large | `git clone https://github.com/HumanSignal/label-studio` |
+| Repository | Framework | Size | Status | Clone Command |
+|------------|-----------|------|--------|---------------|
+| httpbin | Flask | Small | ✅ Done | `git clone --depth 1 https://github.com/postmanlabs/httpbin` |
+| Starlette | FastAPI-adjacent | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/starlette` |
+| Label Studio | Flask | Large | 📋 TODO | `git clone --depth 1 https://github.com/HumanSignal/label-studio` |
 
 ### Tier 2: Gap Analysis (Django - not yet supported)
 
-| Repository | Framework | Size | Clone Command |
-|------------|-----------|------|---------------|
-| Django REST Framework | Django | Medium | `git clone https://github.com/encode/django-rest-framework` |
-| Zulip | Django | Large | `git clone https://github.com/zulip/zulip` |
-| Wagtail | Django | Large | `git clone https://github.com/wagtail/wagtail` |
+| Repository | Framework | Size | Status | Clone Command |
+|------------|-----------|------|--------|---------------|
+| Django REST Framework | Django | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/django-rest-framework` |
+| Zulip | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/zulip/zulip` |
+| Wagtail | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/wagtail/wagtail` |
 
 ### Tier 3: Libraries (Exception-heavy)
 
-| Repository | Type | Clone Command |
-|------------|------|---------------|
-| requests | HTTP client | `git clone https://github.com/psf/requests` |
-| httpx | Async HTTP | `git clone https://github.com/encode/httpx` |
+| Repository | Type | Status | Clone Command |
+|------------|------|--------|---------------|
+| requests | HTTP client | ✅ Done | `git clone --depth 1 https://github.com/psf/requests` |
+| httpx | Async HTTP | 📋 TODO | `git clone --depth 1 https://github.com/encode/httpx` |
 
 ## Dogfooding Protocol
 
@@ -217,14 +303,28 @@ If you find bugs or gaps, create a structured report:
 
 If you are an AI agent running this dogfooding:
 
-1. **Start with httpbin** - smallest, should definitely work
-2. **Time everything** - we need performance data
-3. **Validate findings manually** - don't just report counts, check if they're real
-4. **Be critical** - we want honest feedback, not validation
-5. **Document gaps** - patterns you see that Flow misses are valuable
-6. **Save all output** - append to `/tmp/dogfood-results.md`
+1. **Read the "Learnings & Tips" section first** - it will save you time
+2. **Check if the repo is already done** - see status column in tables above
+3. **Use `--depth 1` when cloning** - full history is not needed
+4. **Time everything** - we need performance data (use `time flow stats`)
+5. **Pick the right commands for the repo type:**
+   - Web apps: `flow <framework> audit` then `routes-to` for specific exceptions
+   - Libraries: `flow exceptions` then `flow escapes <public_function>`
+6. **Validate findings manually** - don't just report counts, check if they're real
+7. **Be critical** - we want honest feedback, not validation
+8. **Document gaps** - patterns you see that Flow misses are valuable
+9. **Update this file** - add your results to "Completed Dogfooding Results" section
 
 The goal is to answer: **"If I used this tool in CI, would it catch real bugs without too much noise?"**
+
+### Quick Reference: Which Commands for Which Repo
+
+| Repo Type | Primary Commands | Secondary Commands |
+|-----------|------------------|-------------------|
+| Flask app | `flow flask audit`, `flow flask routes-to <Exc>` | `flow escapes <handler>` |
+| FastAPI app | `flow fastapi audit`, `flow fastapi routes-to <Exc>` | `flow escapes <handler>` |
+| Library | `flow exceptions`, `flow raises <Exc> -s` | `flow escapes <public_func>` |
+| Django app | `flow raises <Exc>`, `flow escapes <view>` | Document missing patterns |
 
 ## Running the Full Suite
 
