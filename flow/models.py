@@ -1,11 +1,10 @@
 """Data models for code flow analysis."""
 
 from dataclasses import dataclass, field
-from typing import Literal
 
+from flow.enums import ConfidenceLevel, EntrypointKind, ResolutionKind
 from flow.integrations.base import (
     Entrypoint,
-    EntrypointKind,
     GlobalHandler,
 )
 
@@ -82,18 +81,6 @@ class CatchSite:
     has_reraise: bool
 
 
-ResolutionKind = Literal[
-    "import",
-    "self",
-    "constructor",
-    "return_type",
-    "name_fallback",
-    "polymorphic",
-    "stub",
-    "unresolved",
-]
-
-
 @dataclass
 class CallSite:
     """A location where a function is called."""
@@ -105,7 +92,7 @@ class CallSite:
     is_method_call: bool
     caller_qualified: str | None = None
     callee_qualified: str | None = None
-    resolution_kind: ResolutionKind = "unresolved"
+    resolution_kind: ResolutionKind = ResolutionKind.UNRESOLVED
 
 
 @dataclass
@@ -126,16 +113,19 @@ class ExceptionEvidence:
 
     raise_site: "RaiseSite"
     call_path: list[ResolutionEdge]
-    confidence: Literal["high", "medium", "low"]
+    confidence: ConfidenceLevel
 
 
-def compute_confidence(edges: list[ResolutionEdge]) -> Literal["high", "medium", "low"]:
+def compute_confidence(edges: list[ResolutionEdge]) -> ConfidenceLevel:
     """Compute confidence level based on resolution kinds in the path."""
-    if any(e.resolution_kind in ("name_fallback", "polymorphic") for e in edges):
-        return "low"
-    if any(e.resolution_kind == "return_type" for e in edges):
-        return "medium"
-    return "high"
+    if any(
+        e.resolution_kind in (ResolutionKind.NAME_FALLBACK, ResolutionKind.POLYMORPHIC)
+        for e in edges
+    ):
+        return ConfidenceLevel.LOW
+    if any(e.resolution_kind == ResolutionKind.RETURN_TYPE for e in edges):
+        return ConfidenceLevel.MEDIUM
+    return ConfidenceLevel.HIGH
 
 
 @dataclass

@@ -3,6 +3,7 @@
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
+from flow.enums import EntrypointKind, Framework
 from flow.integrations.base import Entrypoint
 
 
@@ -57,10 +58,10 @@ class CLIEntrypointVisitor(cst.CSTVisitor):
                         file=self.file_path,
                         function=func_name,
                         line=pos.start.line,
-                        kind="cli_script",
+                        kind=EntrypointKind.CLI_SCRIPT,
                         metadata={
                             "guard_line": str(pos.start.line),
-                            "framework": "cli",
+                            "framework": Framework.CLI,
                         },
                     )
                 )
@@ -70,10 +71,10 @@ class CLIEntrypointVisitor(cst.CSTVisitor):
                     file=self.file_path,
                     function="<main_block>",
                     line=pos.start.line,
-                    kind="cli_script",
+                    kind=EntrypointKind.CLI_SCRIPT,
                     metadata={
                         "guard_line": str(pos.start.line),
-                        "framework": "cli",
+                        "framework": Framework.CLI,
                         "inline": "True",
                     },
                 )

@@ -6,6 +6,7 @@ and returns a typed result dataclass. No formatting here.
 
 from difflib import get_close_matches
 
+from flow.enums import EntrypointKind, Framework, ResolutionMode
 from flow.models import Entrypoint, ProgramModel
 from flow.propagation import (
     build_forward_call_graph,
@@ -112,8 +113,8 @@ def find_exceptions(model: ProgramModel) -> ExceptionsResult:
 
 def get_stats(model: ProgramModel) -> StatsResult:
     """Get codebase statistics."""
-    http_routes = [e for e in model.entrypoints if e.kind == "http_route"]
-    cli_scripts = [e for e in model.entrypoints if e.kind == "cli_script"]
+    http_routes = [e for e in model.entrypoints if e.kind == EntrypointKind.HTTP_ROUTE]
+    cli_scripts = [e for e in model.entrypoints if e.kind == EntrypointKind.CLI_SCRIPT]
 
     return StatsResult(
         functions=len(model.functions),
@@ -241,13 +242,13 @@ def trace_entrypoints_to(
 
 def list_entrypoints(model: ProgramModel) -> EntrypointsResult:
     """List all entrypoints in the codebase."""
-    http_routes = [e for e in model.entrypoints if e.kind == "http_route"]
-    cli_scripts = [e for e in model.entrypoints if e.kind == "cli_script"]
+    http_routes = [e for e in model.entrypoints if e.kind == EntrypointKind.HTTP_ROUTE]
+    cli_scripts = [e for e in model.entrypoints if e.kind == EntrypointKind.CLI_SCRIPT]
 
     other: dict[str, list[Entrypoint]] = {}
     for e in model.entrypoints:
-        if e.kind not in ("http_route", "cli_script"):
-            kind = e.kind or "unknown"
+        if e.kind not in (EntrypointKind.HTTP_ROUTE, EntrypointKind.CLI_SCRIPT):
+            kind = e.kind or EntrypointKind.UNKNOWN
             if kind not in other:
                 other[kind] = []
             other[kind].append(e)
@@ -299,22 +300,16 @@ def audit_entrypoints(model: ProgramModel) -> AuditResult:
 def find_escapes(
     model: ProgramModel,
     function_name: str,
-    resolution_mode: str = "default",
+    resolution_mode: ResolutionMode = ResolutionMode.DEFAULT,
 ) -> EscapesResult:
     """Find exceptions that can escape from a function."""
-    from flow.propagation import ResolutionMode
-
     entrypoint = None
     for e in model.entrypoints:
         if e.function == function_name:
             entrypoint = e
             break
 
-    mode: ResolutionMode = "default"
-    if resolution_mode in ("strict", "default", "aggressive"):
-        mode = resolution_mode  # type: ignore[assignment]
-
-    propagation = propagate_exceptions(model, resolution_mode=mode)
+    propagation = propagate_exceptions(model, resolution_mode=resolution_mode)
     flow = compute_exception_flow(function_name, model, propagation)
 
     return EscapesResult(
@@ -607,12 +602,12 @@ def find_subclasses(model: ProgramModel, class_name: str) -> SubclassesResult:
 
 def get_init_info(model: ProgramModel, directory_name: str) -> InitResult:
     """Get info needed for init command."""
-    http_routes = [e for e in model.entrypoints if e.kind == "http_route"]
-    cli_scripts = [e for e in model.entrypoints if e.kind == "cli_script"]
+    http_routes = [e for e in model.entrypoints if e.kind == EntrypointKind.HTTP_ROUTE]
+    cli_scripts = [e for e in model.entrypoints if e.kind == EntrypointKind.CLI_SCRIPT]
 
     frameworks: list[str] = []
-    flask_routes = [e for e in http_routes if e.metadata.get("framework") == "flask"]
-    fastapi_routes = [e for e in http_routes if e.metadata.get("framework") == "fastapi"]
+    flask_routes = [e for e in http_routes if e.metadata.get("framework") == Framework.FLASK]
+    fastapi_routes = [e for e in http_routes if e.metadata.get("framework") == Framework.FASTAPI]
 
     if flask_routes:
         frameworks.append("Flask")

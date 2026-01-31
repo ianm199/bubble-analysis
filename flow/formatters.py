@@ -10,6 +10,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.tree import Tree
 
+from flow.enums import ConfidenceLevel, EntrypointKind, OutputFormat, ResolutionKind
 from flow.results import (
     AuditResult,
     CallersResult,
@@ -37,12 +38,12 @@ def _rel_path(file: str, directory: Path) -> str:
 
 def raises(
     result: RaisesResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format raises query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "raises",
             "exception": result.exception_type,
@@ -84,12 +85,12 @@ def raises(
 
 def audit(
     result: AuditResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format audit query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "audit",
             "total_entrypoints": result.total_entrypoints,
@@ -129,7 +130,7 @@ def audit(
 
         for issue in result.issues:
             ep = issue.entrypoint
-            if ep.kind == "http_route":
+            if ep.kind == EntrypointKind.HTTP_ROUTE:
                 method = ep.metadata.get("http_method", "?")
                 path = ep.metadata.get("http_path", "?")
                 label = f"[green]{method}[/green] [cyan]{path}[/cyan]"
@@ -160,12 +161,12 @@ def audit(
 
 def exceptions(
     result: ExceptionsResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format exceptions query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "exceptions",
             "classes": {
@@ -216,11 +217,11 @@ def exceptions(
 
 def stats(
     result: StatsResult,
-    output_format: str,
+    output_format: OutputFormat,
     console: Console,
 ) -> None:
     """Format stats query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "stats",
             "results": {
@@ -255,13 +256,13 @@ def stats(
 
 def callers(
     result: CallersResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
     show_resolution: bool = False,
 ) -> None:
     """Format callers query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "callers",
             "function": result.function_name,
@@ -300,7 +301,7 @@ def callers(
         call_type = "method" if c.is_method_call else "function"
         resolution = (
             f" [dim]\\[{c.resolution_kind}][/dim]"
-            if show_resolution and c.resolution_kind != "unresolved"
+            if show_resolution and c.resolution_kind != ResolutionKind.UNRESOLVED
             else ""
         )
         console.print(
@@ -312,12 +313,12 @@ def callers(
 
 def entrypoints_to(
     result: EntrypointsToResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format entrypoints-to query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         json_traces = []
         for trace in result.traces:
             json_traces.append(
@@ -379,7 +380,7 @@ def entrypoints_to(
 
 def entrypoints(
     result: EntrypointsResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
@@ -390,7 +391,7 @@ def entrypoints(
         + sum(len(v) for v in result.other.values())
     )
 
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "entrypoints",
             "count": total,
@@ -460,19 +461,19 @@ def entrypoints(
         console.print()
 
 
-def _format_confidence(confidence: str) -> str:
+def _format_confidence(confidence: ConfidenceLevel) -> str:
     """Format confidence level with color."""
-    if confidence == "high":
+    if confidence == ConfidenceLevel.HIGH:
         return "[green]high[/green]"
-    elif confidence == "medium":
+    elif confidence == ConfidenceLevel.MEDIUM:
         return "[yellow]medium[/yellow]"
     else:
         return "[red]low[/red]"
 
 
-def _format_resolution_kind(kind: str) -> str:
+def _format_resolution_kind(kind: ResolutionKind) -> str:
     """Format resolution kind with optional warning."""
-    heuristic_kinds = {"name_fallback", "polymorphic"}
+    heuristic_kinds = {ResolutionKind.NAME_FALLBACK, ResolutionKind.POLYMORPHIC}
     if kind in heuristic_kinds:
         return f"[yellow]{kind}[/yellow]"
     return f"[dim]{kind}[/dim]"
@@ -480,12 +481,12 @@ def _format_resolution_kind(kind: str) -> str:
 
 def escapes(
     result: EscapesResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format escapes query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         entrypoint_info = None
         if result.entrypoint:
             entrypoint_info = {
@@ -493,7 +494,7 @@ def escapes(
                 "file": result.entrypoint.file,
                 "line": result.entrypoint.line,
             }
-            if result.entrypoint.kind == "http_route":
+            if result.entrypoint.kind == EntrypointKind.HTTP_ROUTE:
                 entrypoint_info["http_method"] = result.entrypoint.metadata.get("http_method")
                 entrypoint_info["http_path"] = result.entrypoint.metadata.get("http_path")
 
@@ -552,11 +553,11 @@ def escapes(
         console.print_json(json.dumps(data, indent=2))
         return
 
-    if result.entrypoint and result.entrypoint.kind == "http_route":
+    if result.entrypoint and result.entrypoint.kind == EntrypointKind.HTTP_ROUTE:
         method = result.entrypoint.metadata.get("http_method", "?")
         path = result.entrypoint.metadata.get("http_path", "?")
         console.print(f"\n[bold]Exceptions that can escape from {method} {path}:[/bold]\n")
-    elif result.entrypoint and result.entrypoint.kind == "cli_script":
+    elif result.entrypoint and result.entrypoint.kind == EntrypointKind.CLI_SCRIPT:
         rel = _rel_path(result.entrypoint.file, directory)
         console.print(
             f"\n[bold]Exceptions that can escape from CLI script {rel}:{result.function_name}():[/bold]\n"
@@ -658,12 +659,12 @@ def escapes(
 
 def catches(
     result: CatchesResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format catches query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "catches",
             "exception": result.exception_type,
@@ -723,12 +724,12 @@ def catches(
 
 def trace(
     result: TraceResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format trace query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
 
         def node_to_dict(node: TraceNode | PolymorphicNode) -> dict:
             if isinstance(node, PolymorphicNode):
@@ -762,7 +763,7 @@ def trace(
         console.print_json(json.dumps(data, indent=2))
         return
 
-    if result.entrypoint and result.entrypoint.kind == "http_route":
+    if result.entrypoint and result.entrypoint.kind == EntrypointKind.HTTP_ROUTE:
         method = result.entrypoint.metadata.get("http_method", "?")
         path = result.entrypoint.metadata.get("http_path", "?")
         root_label = f"[bold green]{method}[/bold green] [bold cyan]{path}[/bold cyan]"
@@ -810,12 +811,12 @@ def trace(
 
 def subclasses(
     result: SubclassesResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format subclasses query result."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "subclasses",
             "class": result.class_name,
