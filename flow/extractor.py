@@ -531,6 +531,8 @@ class CodeExtractor(cst.CSTVisitor):
             self.detected_frameworks.add("flask")
         elif "fastapi" in module_lower or "starlette" in module_lower:
             self.detected_frameworks.add("fastapi")
+        elif "django" in module_lower or "rest_framework" in module_lower:
+            self.detected_frameworks.add("django")
 
     def _block_has_reraise(self, body: cst.BaseSuite) -> bool:
         """Check if a block contains a raise statement (re-raise)."""

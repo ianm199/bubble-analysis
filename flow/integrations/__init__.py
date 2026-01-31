@@ -66,11 +66,13 @@ def load_builtin_integrations() -> None:
         return
 
     from flow.integrations.cli_scripts import CLIScriptsIntegration
+    from flow.integrations.django import DjangoIntegration
     from flow.integrations.fastapi import FastAPIIntegration
     from flow.integrations.flask import FlaskIntegration
 
     register_integration(FlaskIntegration())
     register_integration(FastAPIIntegration())
+    register_integration(DjangoIntegration())
     register_integration(CLIScriptsIntegration())
     _builtin_integrations_loaded = True
 
