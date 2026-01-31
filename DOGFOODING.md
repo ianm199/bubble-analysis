@@ -7,36 +7,251 @@ This document provides instructions for systematically testing Flow against real
 ```bash
 # From any directory, run the dogfooding agent
 cd /tmp
-git clone <target-repo>
+git clone --depth 1 <target-repo>
 cd <target-repo>
-flow stats
+flow stats --no-cache
 flow <framework> audit  # flask, fastapi, or cli
 ```
 
+## Learnings & Tips (Read This First!)
+
+These tips come from completed dogfooding runs and will save you time:
+
+### For Web Apps (Flask/FastAPI)
+```bash
+flow stats --no-cache              # Basic metrics
+flow <framework> entrypoints       # See routes
+flow <framework> audit             # Find issues
+flow <framework> routes-to <Exc>   # Trace specific exception to routes
+flow escapes <function>            # Deep dive on specific function
+```
+
+### For Libraries (no HTTP routes)
+```bash
+flow stats --no-cache              # Basic metrics
+flow exceptions                    # Exception hierarchy (very useful!)
+flow raises <Exception> -s         # Find all raises of exception + subclasses
+flow escapes <public_function>     # What can escape from public API
+flow callers <function> -r         # Who calls this, with resolution info
+```
+
+### Key Insights
+- **Flow finds BUGS in web apps** - httpbin proved this (found real 500 errors)
+- **Flow is a DOCUMENTATION tool for libraries** - useful for understanding exception flow, but won't find bugs (exceptions are supposed to escape)
+- **Low confidence is OK for libraries** - name_fallback resolution is expected when there are no type hints
+- **`flow exceptions`** - extremely valuable for libraries, shows full hierarchy
+- **`--strict` mode** - often too aggressive, filters out real findings
+- **Build time** - expect ~1.5s per 1k LOC on first run
+- **Always use `--depth 1`** when cloning to save time
+
+### When to Use Flow
+
+| Codebase Type | Flow's Value | Primary Use Case |
+|---------------|--------------|------------------|
+| Flask/FastAPI apps | **High** - finds real bugs | Catch uncaught exceptions before they become 500s |
+| Django apps | **High** - finds real bugs | Same as Flask/FastAPI, now with `flow django` support |
+| Libraries | **Documentation only** | Generate "what can this raise?" docs |
+| CLI tools | Medium | Check `if __name__ == "__main__"` error handling |
+
+## Completed Dogfooding Results
+
+### httpbin (Flask) ✅
+
+**Basic Info:**
+- LOC: 3,292
+- Framework: Flask
+- Model build time: 5.9s
+- Functions detected: 167
+- Entrypoints detected: 58 (55 HTTP routes, 3 CLI scripts)
+
+**Audit Results:**
+- Routes with escaping exceptions: 3 (digest-auth variants)
+- Strict mode findings: 0 (too aggressive)
+
+**Validation:**
+- Route-level precision: **100%** (3/3 true positives)
+- Raise-site precision: **75%** (3/4 true positives)
+
+**Bugs Found in Flow:**
+- `routes-to` command was broken (fixed in PR)
+- `--strict` mode too conservative
+
+**Real Bug Found:**
+- digest-auth endpoints can return 500 errors when clients send malformed Authorization headers
+
+**Verdict:** ✅ Yes - found real issues
+
+---
+
+### requests (Library) ⚠️
+
+**Basic Info:**
+- LOC: 11,152
+- Framework: None (library)
+- Model build time: 15s
+- Functions detected: 240
+- Classes detected: 45
+- Entrypoints: 2 CLI scripts only
+
+**Key Findings:**
+- `flow exceptions` correctly parsed full RequestException hierarchy (20+ exception types)
+- `flow raises RequestException -s` found all 34 raise sites
+- `flow escapes get` shows complete list of what can escape from public API
+
+**Honest Assessment:**
+Flow did NOT find any bugs here. The exceptions are *supposed* to escape - that's the library's API. For libraries, escaping exceptions is the design, not a problem.
+
+**What Flow is good for with libraries:**
+- ✅ Auto-generating "what can this function raise?" documentation
+- ✅ Verifying exception hierarchy is correct
+- ✅ Understanding exception flow for unfamiliar code
+
+**What Flow is NOT good for with libraries:**
+- ❌ Finding bugs (exceptions should escape to callers)
+- ❌ The "audit" concept doesn't apply (no HTTP routes)
+
+**Most Useful Commands for Libraries:**
+```bash
+flow exceptions                    # Shows: RequestException -> ConnectionError -> SSLError etc
+flow raises RequestException -s    # All 34 locations where exceptions are raised
+flow escapes get                   # What can escape from requests.get()
+```
+
+**Verdict:** ⚠️ Useful as documentation/analysis tool, but NOT a bug finder for libraries
+
+---
+
 ## Target Repositories
 
-### Tier 1: Validation (Flask/FastAPI - should work)
+### Tier 1: High-Impact "Banger" Targets 🎯
 
-| Repository | Framework | Size | Clone Command |
-|------------|-----------|------|---------------|
-| httpbin | Flask | Small | `git clone https://github.com/postmanlabs/httpbin` |
-| Starlette | FastAPI-adjacent | Medium | `git clone https://github.com/encode/starlette` |
-| Label Studio | Flask | Large | `git clone https://github.com/HumanSignal/label-studio` |
+These are high-profile projects where finding a bug would generate serious attention. Priority order.
 
-### Tier 2: Gap Analysis (Django - not yet supported)
+| Repository | Framework | Size | Why It's a Banger | Status |
+|------------|-----------|------|-------------------|--------|
+| **Sentry** | Django + some Flask | Massive | Finding bugs in an *error tracker* is peak irony | 📋 TODO |
+| **Airflow** | Flask | Large | Apache project, millions of users, web UI | 📋 TODO |
+| **Superset** | Flask | Large | Apache project, widely-used BI tool | 📋 TODO |
 
-| Repository | Framework | Size | Clone Command |
-|------------|-----------|------|---------------|
-| Django REST Framework | Django | Medium | `git clone https://github.com/encode/django-rest-framework` |
-| Zulip | Django | Large | `git clone https://github.com/zulip/zulip` |
-| Wagtail | Django | Large | `git clone https://github.com/wagtail/wagtail` |
+#### Sentry Dogfooding Plan
 
-### Tier 3: Libraries (Exception-heavy)
+```bash
+# Clone (warning: large repo)
+cd /tmp
+git clone --depth 1 https://github.com/getsentry/sentry
+cd sentry
 
-| Repository | Type | Clone Command |
-|------------|------|---------------|
-| requests | HTTP client | `git clone https://github.com/psf/requests` |
-| httpx | Async HTTP | `git clone https://github.com/encode/httpx` |
+# Sentry has multiple components - focus on the web app
+cd src/sentry
+
+# Basic analysis
+flow stats --no-cache
+flow django entrypoints      # Django routes
+flow django audit            # Find escaping exceptions
+
+# If Django routes found, trace specific exceptions
+flow django routes-to ValidationError
+flow django routes-to PermissionDenied
+flow django routes-to ObjectDoesNotExist
+
+# Also check their API layer (may have Flask/DRF components)
+flow flask entrypoints 2>&1 || echo "No Flask"
+flow fastapi entrypoints 2>&1 || echo "No FastAPI"
+```
+
+**What to look for:**
+- Unhandled exceptions in webhook handlers (external input)
+- Missing error handling in integration endpoints (GitHub, Slack, etc.)
+- Exceptions in user-facing views that could leak to 500s
+
+**Why this matters:** If you find a bug in Sentry, you can file an issue saying "I found this bug using my exception flow analyzer" - that's the kind of story that gets retweeted.
+
+#### Airflow Dogfooding Plan
+
+```bash
+cd /tmp
+git clone --depth 1 https://github.com/apache/airflow
+cd airflow
+
+# Airflow's web UI is Flask-based
+cd airflow/www
+
+flow stats --no-cache
+flow flask entrypoints
+flow flask audit
+
+# Trace specific exceptions
+flow flask routes-to AirflowException
+flow flask routes-to ValueError
+flow flask routes-to PermissionError
+
+# Deep dive on interesting routes
+flow escapes trigger_dag      # DAG triggering
+flow escapes task_instance    # Task management
+```
+
+**What to look for:**
+- Unhandled exceptions in DAG management endpoints
+- Missing validation on user-provided DAG parameters
+- Exceptions in authentication/authorization paths
+
+**Why this matters:** Apache Airflow is used by Netflix, Airbnb, and thousands of companies. A bug found here has real-world impact.
+
+#### Superset Dogfooding Plan
+
+```bash
+cd /tmp
+git clone --depth 1 https://github.com/apache/superset
+cd superset
+
+# Superset is Flask-based
+flow stats --no-cache
+flow flask entrypoints
+flow flask audit
+
+# Check for SQL injection-adjacent issues (exceptions from bad queries)
+flow flask routes-to SQLAlchemyError
+flow flask routes-to DatabaseError
+flow raises ProgrammingError -s
+
+# Check authentication paths
+flow escapes login
+flow escapes oauth_authorized
+```
+
+**What to look for:**
+- Unhandled database exceptions in query endpoints
+- Missing validation on user-provided SQL/chart configs
+- Authentication edge cases
+
+**Why this matters:** Superset handles database credentials and runs queries - exception leaks could reveal sensitive info.
+
+---
+
+### Tier 2: Validation (Flask/FastAPI - known to work)
+
+| Repository | Framework | Size | Status | Clone Command |
+|------------|-----------|------|--------|---------------|
+| httpbin | Flask | Small | ✅ Done | `git clone --depth 1 https://github.com/postmanlabs/httpbin` |
+| Starlette | FastAPI-adjacent | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/starlette` |
+| Label Studio | Flask | Large | 📋 TODO | `git clone --depth 1 https://github.com/HumanSignal/label-studio` |
+
+### Tier 3: Django (now supported!)
+
+| Repository | Framework | Size | Status | Clone Command |
+|------------|-----------|------|--------|---------------|
+| Django REST Framework | Django | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/django-rest-framework` |
+| Zulip | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/zulip/zulip` |
+| Wagtail | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/wagtail/wagtail` |
+| Authentik | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/goauthentik/authentik` |
+| Netbox | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/netbox-community/netbox` |
+
+### Tier 4: Libraries (Documentation value only)
+
+| Repository | Type | Status | Clone Command |
+|------------|------|--------|---------------|
+| requests | HTTP client | ✅ Done | `git clone --depth 1 https://github.com/psf/requests` |
+| httpx | Async HTTP | 📋 TODO | `git clone --depth 1 https://github.com/encode/httpx` |
 
 ## Dogfooding Protocol
 
@@ -217,14 +432,28 @@ If you find bugs or gaps, create a structured report:
 
 If you are an AI agent running this dogfooding:
 
-1. **Start with httpbin** - smallest, should definitely work
-2. **Time everything** - we need performance data
-3. **Validate findings manually** - don't just report counts, check if they're real
-4. **Be critical** - we want honest feedback, not validation
-5. **Document gaps** - patterns you see that Flow misses are valuable
-6. **Save all output** - append to `/tmp/dogfood-results.md`
+1. **Read the "Learnings & Tips" section first** - it will save you time
+2. **Check if the repo is already done** - see status column in tables above
+3. **Use `--depth 1` when cloning** - full history is not needed
+4. **Time everything** - we need performance data (use `time flow stats`)
+5. **Pick the right commands for the repo type:**
+   - Web apps: `flow <framework> audit` then `routes-to` for specific exceptions
+   - Libraries: `flow exceptions` then `flow escapes <public_function>`
+6. **Validate findings manually** - don't just report counts, check if they're real
+7. **Be critical** - we want honest feedback, not validation
+8. **Document gaps** - patterns you see that Flow misses are valuable
+9. **Update this file** - add your results to "Completed Dogfooding Results" section
 
 The goal is to answer: **"If I used this tool in CI, would it catch real bugs without too much noise?"**
+
+### Quick Reference: Which Commands for Which Repo
+
+| Repo Type | Primary Commands | Secondary Commands |
+|-----------|------------------|-------------------|
+| Flask app | `flow flask audit`, `flow flask routes-to <Exc>` | `flow escapes <handler>` |
+| FastAPI app | `flow fastapi audit`, `flow fastapi routes-to <Exc>` | `flow escapes <handler>` |
+| Django app | `flow django audit`, `flow django routes-to <Exc>` | `flow escapes <view>` |
+| Library | `flow exceptions`, `flow raises <Exc> -s` | `flow escapes <public_func>` |
 
 ## Running the Full Suite
 
