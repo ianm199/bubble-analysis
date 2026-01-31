@@ -108,7 +108,6 @@ class CodeExtractor(cst.CSTVisitor):
         return False
 
     def visit_ClassDef(self, node: cst.ClassDef) -> bool:
-        pos = self.get_metadata(PositionProvider, node)
         class_name = node.name.value
 
         bases: list[str] = []
