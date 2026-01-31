@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from flow.enums import EntrypointKind, OutputFormat
 from flow.extractor import extract_from_directory
 from flow.integrations import formatters
 from flow.integrations.cli_scripts import CLIScriptsIntegration
@@ -34,7 +35,7 @@ def _build_model(directory: Path, use_cache: bool = True) -> ProgramModel:
 
 def _get_cli_entrypoints(model: ProgramModel) -> list:
     """Get CLI script entrypoints from the model."""
-    return [e for e in model.entrypoints if e.kind == "cli_script"]
+    return [e for e in model.entrypoints if e.kind == EntrypointKind.CLI_SCRIPT]
 
 
 @app.command()
@@ -57,7 +58,7 @@ def audit(
     model = _build_model(directory, use_cache=not no_cache)
     entrypoints = _get_cli_entrypoints(model)
     result = audit_integration(model, integration, entrypoints, [])
-    formatters.audit(result, output_format, directory, console)
+    formatters.audit(result, OutputFormat(output_format), directory, console)
 
 
 @app.command(name="entrypoints")
@@ -77,7 +78,7 @@ def list_scripts(
     model = _build_model(directory, use_cache=not no_cache)
     entrypoints = _get_cli_entrypoints(model)
     result = list_integration_entrypoints(integration, entrypoints)
-    formatters.entrypoints(result, output_format, directory, console)
+    formatters.entrypoints(result, OutputFormat(output_format), directory, console)
 
 
 @app.command(name="scripts-to")
@@ -104,4 +105,4 @@ def scripts_to(
     result = trace_routes_to_exception(
         model, integration, entrypoints, exception_type, include_subclasses
     )
-    formatters.routes_to(result, output_format, directory, console)
+    formatters.routes_to(result, OutputFormat(output_format), directory, console)

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from rich.console import Console
 
+from flow.enums import EntrypointKind, OutputFormat
 from flow.integrations.models import AuditResult, EntrypointsResult, RoutesToResult
 
 
@@ -20,12 +21,12 @@ def _rel_path(file: str, directory: Path) -> str:
 
 def audit(
     result: AuditResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format audit result for an integration."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "audit",
             "integration": result.integration_name,
@@ -67,7 +68,7 @@ def audit(
 
         for issue in result.issues:
             ep = issue.entrypoint
-            if ep.kind == "http_route":
+            if ep.kind == EntrypointKind.HTTP_ROUTE:
                 method = ep.metadata.get("http_method", "?")
                 path = ep.metadata.get("http_path", "?")
                 label = f"[green]{method}[/green] [cyan]{path}[/cyan]"
@@ -95,12 +96,12 @@ def audit(
 
 def entrypoints(
     result: EntrypointsResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format entrypoints result for an integration."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         data = {
             "query": "entrypoints",
             "integration": result.integration_name,
@@ -125,9 +126,13 @@ def entrypoints(
         console.print(f"[yellow]No {result.integration_name} entrypoints found[/yellow]")
         return
 
-    http_routes = [e for e in result.entrypoints if e.kind == "http_route"]
-    cli_scripts = [e for e in result.entrypoints if e.kind == "cli_script"]
-    other = [e for e in result.entrypoints if e.kind not in ("http_route", "cli_script")]
+    http_routes = [e for e in result.entrypoints if e.kind == EntrypointKind.HTTP_ROUTE]
+    cli_scripts = [e for e in result.entrypoints if e.kind == EntrypointKind.CLI_SCRIPT]
+    other = [
+        e
+        for e in result.entrypoints
+        if e.kind not in (EntrypointKind.HTTP_ROUTE, EntrypointKind.CLI_SCRIPT)
+    ]
 
     if http_routes:
         console.print(
@@ -172,12 +177,12 @@ def entrypoints(
 
 def routes_to(
     result: RoutesToResult,
-    output_format: str,
+    output_format: OutputFormat,
     directory: Path,
     console: Console,
 ) -> None:
     """Format routes-to result for an integration."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         json_traces = []
         for trace in result.traces:
             json_traces.append(

@@ -3,6 +3,7 @@
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
+from flow.enums import EntrypointKind, Framework
 from flow.integrations.base import Entrypoint, GlobalHandler
 
 
@@ -27,11 +28,11 @@ class FastAPIRouteVisitor(cst.CSTVisitor):
                         file=self.file_path,
                         function=node.name.value,
                         line=pos.start.line,
-                        kind="http_route",
+                        kind=EntrypointKind.HTTP_ROUTE,
                         metadata={
                             "http_method": route_info["method"],
                             "http_path": route_info["path"],
-                            "framework": "fastapi",
+                            "framework": Framework.FASTAPI,
                         },
                     )
                 )

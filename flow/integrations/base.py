@@ -5,17 +5,14 @@ how framework-specific exceptions map to HTTP responses.
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import typer
 
+from flow.enums import EntrypointKind
+
 if TYPE_CHECKING:
     from flow.integrations.models import IntegrationData
-
-
-EntrypointKind = Literal[
-    "http_route", "queue_handler", "cli_script", "scheduled_job", "test", "unknown"
-]
 
 
 @dataclass
