@@ -1,6 +1,5 @@
-from flask import Flask
-
 from errors import AppError, ValidationError
+from flask import Flask
 
 app = Flask(__name__)
 

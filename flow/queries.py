@@ -14,6 +14,8 @@ from flow.propagation import (
     propagate_exceptions,
 )
 from flow.results import (
+    AuditIssue,
+    AuditResult,
     CallersResult,
     CatchesResult,
     EntrypointsResult,
@@ -257,10 +259,8 @@ def list_entrypoints(model: ProgramModel) -> EntrypointsResult:
     )
 
 
-def audit_entrypoints(model: ProgramModel) -> "AuditResult":
+def audit_entrypoints(model: ProgramModel) -> AuditResult:
     """Audit all entrypoints for escaping exceptions."""
-    from flow.results import AuditIssue, AuditResult
-
     if not model.entrypoints:
         return AuditResult(total_entrypoints=0, issues=[], clean_count=0)
 

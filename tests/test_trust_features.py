@@ -7,7 +7,7 @@ from flow.detectors import FRAMEWORK_EXCEPTION_RESPONSES
 from flow.extractor import extract_from_directory
 from flow.models import ResolutionEdge, compute_confidence
 from flow.propagation import propagate_exceptions
-from flow.stubs import StubLibrary, load_stubs, validate_stub_file
+from flow.stubs import load_stubs, validate_stub_file
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -19,12 +19,20 @@ class TestResolutionEdgeAndConfidence:
         """High confidence when all resolutions are precise."""
         edges = [
             ResolutionEdge(
-                caller="a", callee="b", file="f.py", line=1,
-                resolution_kind="import", is_heuristic=False
+                caller="a",
+                callee="b",
+                file="f.py",
+                line=1,
+                resolution_kind="import",
+                is_heuristic=False,
             ),
             ResolutionEdge(
-                caller="b", callee="c", file="f.py", line=2,
-                resolution_kind="self", is_heuristic=False
+                caller="b",
+                callee="c",
+                file="f.py",
+                line=2,
+                resolution_kind="self",
+                is_heuristic=False,
             ),
         ]
         assert compute_confidence(edges) == "high"
@@ -33,8 +41,12 @@ class TestResolutionEdgeAndConfidence:
         """Medium confidence when return_type resolution is used."""
         edges = [
             ResolutionEdge(
-                caller="a", callee="b", file="f.py", line=1,
-                resolution_kind="return_type", is_heuristic=False
+                caller="a",
+                callee="b",
+                file="f.py",
+                line=1,
+                resolution_kind="return_type",
+                is_heuristic=False,
             ),
         ]
         assert compute_confidence(edges) == "medium"
@@ -43,8 +55,12 @@ class TestResolutionEdgeAndConfidence:
         """Low confidence when name_fallback is used."""
         edges = [
             ResolutionEdge(
-                caller="a", callee="b", file="f.py", line=1,
-                resolution_kind="name_fallback", is_heuristic=True
+                caller="a",
+                callee="b",
+                file="f.py",
+                line=1,
+                resolution_kind="name_fallback",
+                is_heuristic=True,
             ),
         ]
         assert compute_confidence(edges) == "low"
@@ -53,8 +69,12 @@ class TestResolutionEdgeAndConfidence:
         """Low confidence when polymorphic resolution is used."""
         edges = [
             ResolutionEdge(
-                caller="a", callee="b", file="f.py", line=1,
-                resolution_kind="polymorphic", is_heuristic=True
+                caller="a",
+                callee="b",
+                file="f.py",
+                line=1,
+                resolution_kind="polymorphic",
+                is_heuristic=True,
             ),
         ]
         assert compute_confidence(edges) == "low"
@@ -84,9 +104,7 @@ class TestResolutionModes:
         model = extract_from_directory(FIXTURES / "cli_scripts", use_cache=False)
         result = propagate_exceptions(model, resolution_mode="default")
 
-        has_propagation = any(
-            excs for excs in result.propagated_raises.values() if excs
-        )
+        has_propagation = any(excs for excs in result.propagated_raises.values() if excs)
         assert has_propagation
 
 

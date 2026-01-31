@@ -229,7 +229,11 @@ def _compute_entrypoint_reachability(
     entrypoint_functions: set[str],
 ) -> tuple[set[str], dict[str, str]]:
     """
-    Compute which functions can reach entrypoints via reverse BFS.
+    Compute which functions are reachable from entrypoints via forward BFS.
+
+    A function is reachable if an entrypoint calls it (directly or transitively).
+    This is used to prune the search space when tracing from raise sites back
+    to entrypoints - we only explore functions that could possibly connect.
 
     Returns (reachable_set, function_to_entrypoint_map).
     """
@@ -252,24 +256,43 @@ def _compute_entrypoint_reachability(
                 forward_graph[caller] = set()
             forward_graph[caller].add(callee)
 
-    changed = True
+    simple_to_qualified: dict[str, list[str]] = {}
+    for key in forward_graph:
+        simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+        if simple not in simple_to_qualified:
+            simple_to_qualified[simple] = []
+        simple_to_qualified[simple].append(key)
+
+    worklist = list(entrypoint_functions)
     iterations = 0
-    max_iterations = 50
-    while changed and iterations < max_iterations:
-        changed = False
+    max_iterations = 10000
+
+    while worklist and iterations < max_iterations:
         iterations += 1
-        for func, callees in forward_graph.items():
-            if func not in reachable:
-                for callee in callees:
-                    callee_simple = callee.split("::")[-1].split(".")[-1] if "::" in callee else callee.split(".")[-1]
-                    if callee in reachable or callee_simple in reachable:
-                        reachable.add(func)
-                        func_simple = func.split("::")[-1].split(".")[-1] if "::" in func else func.split(".")[-1]
-                        reachable.add(func_simple)
-                        if callee in func_to_entrypoint:
-                            func_to_entrypoint[func] = func_to_entrypoint[callee]
-                        changed = True
-                        break
+        func = worklist.pop()
+
+        func_simple = func.split("::")[-1].split(".")[-1] if "::" in func else func.split(".")[-1]
+
+        callees: set[str] = set()
+        callees.update(forward_graph.get(func, set()))
+        for qualified_key in simple_to_qualified.get(func_simple, []):
+            callees.update(forward_graph.get(qualified_key, set()))
+
+        for callee in callees:
+            callee_simple = (
+                callee.split("::")[-1].split(".")[-1] if "::" in callee else callee.split(".")[-1]
+            )
+
+            if callee not in reachable:
+                reachable.add(callee)
+                reachable.add(callee_simple)
+                if func in func_to_entrypoint:
+                    func_to_entrypoint[callee] = func_to_entrypoint[func]
+                worklist.append(callee)
+
+            if callee_simple not in reachable:
+                reachable.add(callee_simple)
+                worklist.append(callee_simple)
 
     return reachable, func_to_entrypoint
 
@@ -312,8 +335,15 @@ def _trace_to_entrypoints(
             if len(paths) >= max_paths:
                 return
             if reachable_from_entrypoints is not None:
-                caller_simple = caller.split("::")[-1].split(".")[-1] if "::" in caller else caller.split(".")[-1]
-                if caller not in reachable_from_entrypoints and caller_simple not in reachable_from_entrypoints:
+                caller_simple = (
+                    caller.split("::")[-1].split(".")[-1]
+                    if "::" in caller
+                    else caller.split(".")[-1]
+                )
+                if (
+                    caller not in reachable_from_entrypoints
+                    and caller_simple not in reachable_from_entrypoints
+                ):
                     continue
             dfs(caller, path + [caller], visited.copy())
 

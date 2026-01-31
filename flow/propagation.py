@@ -154,7 +154,7 @@ def expand_polymorphic_call(
         return [callee]
 
     result: list[str] = []
-    for impl_class, impl_cls_def in implementations:
+    for impl_class, _ in implementations:
         for qualified in method_to_qualified.get(method_name, []):
             if impl_class in qualified:
                 result.append(qualified)
@@ -262,7 +262,6 @@ def propagate_exceptions(
     catches_by_function = compute_catches_by_function(model)
     forward_graph = build_forward_call_graph(model)
     call_site_lookup = _build_call_site_lookup(model)
-    raise_site_lookup = _build_raise_site_lookup(model)
 
     propagated: dict[str, set[str]] = {}
     propagated_evidence: dict[str, dict[tuple[str, str, int], PropagatedRaise]] = {}
