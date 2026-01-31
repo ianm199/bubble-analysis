@@ -36,11 +36,22 @@ flow callers <function> -r         # Who calls this, with resolution info
 ```
 
 ### Key Insights
+- **Flow finds BUGS in web apps** - httpbin proved this (found real 500 errors)
+- **Flow is a DOCUMENTATION tool for libraries** - useful for understanding exception flow, but won't find bugs (exceptions are supposed to escape)
 - **Low confidence is OK for libraries** - name_fallback resolution is expected when there are no type hints
 - **`flow exceptions`** - extremely valuable for libraries, shows full hierarchy
 - **`--strict` mode** - often too aggressive, filters out real findings
 - **Build time** - expect ~1.5s per 1k LOC on first run
 - **Always use `--depth 1`** when cloning to save time
+
+### When to Use Flow
+
+| Codebase Type | Flow's Value | Primary Use Case |
+|---------------|--------------|------------------|
+| Flask/FastAPI apps | **High** - finds real bugs | Catch uncaught exceptions before they become 500s |
+| Django apps | Medium (no route detection yet) | Manual analysis with `raises`/`escapes` |
+| Libraries | **Documentation only** | Generate "what can this raise?" docs |
+| CLI tools | Medium | Check `if __name__ == "__main__"` error handling |
 
 ## Completed Dogfooding Results
 
@@ -72,7 +83,7 @@ flow callers <function> -r         # Who calls this, with resolution info
 
 ---
 
-### requests (Library) ✅
+### requests (Library) ⚠️
 
 **Basic Info:**
 - LOC: 11,152
@@ -86,7 +97,18 @@ flow callers <function> -r         # Who calls this, with resolution info
 - `flow exceptions` correctly parsed full RequestException hierarchy (20+ exception types)
 - `flow raises RequestException -s` found all 34 raise sites
 - `flow escapes get` shows complete list of what can escape from public API
-- All findings are "low confidence" due to name_fallback (expected for untyped library)
+
+**Honest Assessment:**
+Flow did NOT find any bugs here. The exceptions are *supposed* to escape - that's the library's API. For libraries, escaping exceptions is the design, not a problem.
+
+**What Flow is good for with libraries:**
+- ✅ Auto-generating "what can this function raise?" documentation
+- ✅ Verifying exception hierarchy is correct
+- ✅ Understanding exception flow for unfamiliar code
+
+**What Flow is NOT good for with libraries:**
+- ❌ Finding bugs (exceptions should escape to callers)
+- ❌ The "audit" concept doesn't apply (no HTTP routes)
 
 **Most Useful Commands for Libraries:**
 ```bash
@@ -95,7 +117,7 @@ flow raises RequestException -s    # All 34 locations where exceptions are raise
 flow escapes get                   # What can escape from requests.get()
 ```
 
-**Verdict:** ✅ Yes - useful for library authors documenting exception behavior
+**Verdict:** ⚠️ Useful as documentation/analysis tool, but NOT a bug finder for libraries
 
 ---
 
