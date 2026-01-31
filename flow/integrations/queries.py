@@ -279,7 +279,9 @@ def _compute_entrypoint_reachability(
             callees.update(forward_graph.get(qualified_key, set()))
 
         for callee in callees:
-            callee_simple = callee.split("::")[-1].split(".")[-1] if "::" in callee else callee.split(".")[-1]
+            callee_simple = (
+                callee.split("::")[-1].split(".")[-1] if "::" in callee else callee.split(".")[-1]
+            )
 
             if callee not in reachable:
                 reachable.add(callee)
@@ -333,8 +335,15 @@ def _trace_to_entrypoints(
             if len(paths) >= max_paths:
                 return
             if reachable_from_entrypoints is not None:
-                caller_simple = caller.split("::")[-1].split(".")[-1] if "::" in caller else caller.split(".")[-1]
-                if caller not in reachable_from_entrypoints and caller_simple not in reachable_from_entrypoints:
+                caller_simple = (
+                    caller.split("::")[-1].split(".")[-1]
+                    if "::" in caller
+                    else caller.split(".")[-1]
+                )
+                if (
+                    caller not in reachable_from_entrypoints
+                    and caller_simple not in reachable_from_entrypoints
+                ):
                     continue
             dfs(caller, path + [caller], visited.copy())
 

@@ -5,8 +5,6 @@ back to entrypoints. This was a bug where routes-to would fail to find
 connections that audit found successfully.
 """
 
-import pytest
-
 from flow.integrations.flask import FlaskIntegration
 from flow.integrations.queries import trace_routes_to_exception
 from flow.models import ProgramModel
