@@ -1,0 +1,40 @@
+"""Django and Django REST Framework exception-to-HTTP-response mappings.
+
+Defines which exceptions Django/DRF convert to HTTP responses automatically.
+"""
+
+EXCEPTION_RESPONSES: dict[str, str] = {
+    "django.http.Http404": "HTTP 404",
+    "Http404": "HTTP 404",
+    "django.core.exceptions.PermissionDenied": "HTTP 403",
+    "PermissionDenied": "HTTP 403",
+    "django.core.exceptions.SuspiciousOperation": "HTTP 400",
+    "SuspiciousOperation": "HTTP 400",
+    "django.core.exceptions.DisallowedHost": "HTTP 400",
+    "DisallowedHost": "HTTP 400",
+    "django.core.exceptions.DisallowedRedirect": "HTTP 400",
+    "DisallowedRedirect": "HTTP 400",
+    "rest_framework.exceptions.APIException": "HTTP 500",
+    "APIException": "HTTP 500",
+    "rest_framework.exceptions.ValidationError": "HTTP 400",
+    "DRFValidationError": "HTTP 400",
+    "rest_framework.exceptions.ParseError": "HTTP 400",
+    "ParseError": "HTTP 400",
+    "rest_framework.exceptions.AuthenticationFailed": "HTTP 401",
+    "AuthenticationFailed": "HTTP 401",
+    "rest_framework.exceptions.NotAuthenticated": "HTTP 401",
+    "NotAuthenticated": "HTTP 401",
+    "rest_framework.exceptions.PermissionDenied": "HTTP 403",
+    "rest_framework.exceptions.NotFound": "HTTP 404",
+    "NotFound": "HTTP 404",
+    "rest_framework.exceptions.MethodNotAllowed": "HTTP 405",
+    "MethodNotAllowed": "HTTP 405",
+    "rest_framework.exceptions.NotAcceptable": "HTTP 406",
+    "NotAcceptable": "HTTP 406",
+    "rest_framework.exceptions.UnsupportedMediaType": "HTTP 415",
+    "UnsupportedMediaType": "HTTP 415",
+    "rest_framework.exceptions.Throttled": "HTTP 429",
+    "Throttled": "HTTP 429",
+    "pydantic.ValidationError": "HTTP 422",
+    "pydantic_core._pydantic_core.ValidationError": "HTTP 422",
+}
