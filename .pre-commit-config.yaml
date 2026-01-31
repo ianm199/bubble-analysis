@@ -12,15 +12,16 @@ repos:
       - id: semgrep
         args: ["--config", ".semgrep/", "--error"]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+  - repo: https://github.com/RobertCraiworthy/pyright-python
+    rev: v1.1.390
     hooks:
-      - id: mypy
+      - id: pyright
         additional_dependencies:
-          - pydantic
-          - sqlalchemy[mypy]
-          # Add your typed dependencies here
-        args: [--ignore-missing-imports]
+          - libcst>=1.1.0
+          - typer>=0.12.0
+          - rich>=13.0.0
+          - msgpack>=1.0.0
+          - pyyaml>=6.0
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
