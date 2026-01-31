@@ -11,6 +11,7 @@ import typer
 from rich.console import Console
 
 from flow import formatters, queries
+from flow.enums import OutputFormat, ResolutionMode
 from flow.extractor import extract_from_directory
 from flow.models import ProgramModel
 
@@ -98,7 +99,7 @@ def raises(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_raises(model, exception_type, include_subclasses)
-    formatters.raises(result, output_format, directory, console)
+    formatters.raises(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()
@@ -113,7 +114,7 @@ def exceptions(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_exceptions(model)
-    formatters.exceptions(result, output_format, directory, console)
+    formatters.exceptions(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()
@@ -128,7 +129,7 @@ def stats(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.get_stats(model)
-    formatters.stats(result, output_format, console)
+    formatters.stats(result, OutputFormat(output_format), console)
 
 
 @app.command()
@@ -147,7 +148,7 @@ def callers(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_callers(model, function_name)
-    formatters.callers(result, output_format, directory, console, show_resolution)
+    formatters.callers(result, OutputFormat(output_format), directory, console, show_resolution)
 
 
 @app.command()
@@ -176,15 +177,15 @@ def escapes(
     config = load_config(directory)
 
     if strict:
-        resolution_mode = "strict"
+        resolution_mode = ResolutionMode.STRICT
     elif aggressive:
-        resolution_mode = "aggressive"
+        resolution_mode = ResolutionMode.AGGRESSIVE
     else:
-        resolution_mode = config.resolution_mode
+        resolution_mode = ResolutionMode(config.resolution_mode)
 
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_escapes(model, function_name, resolution_mode=resolution_mode)
-    formatters.escapes(result, output_format, directory, console)
+    formatters.escapes(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()
@@ -203,7 +204,7 @@ def catches(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_catches(model, exception_type, include_subclasses)
-    formatters.catches(result, output_format, directory, console)
+    formatters.catches(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()
@@ -260,7 +261,7 @@ def trace(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.trace_function(model, function_name, depth, show_all)
-    formatters.trace(result, output_format, directory, console)
+    formatters.trace(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()
@@ -276,7 +277,7 @@ def subclasses(
     directory = directory.resolve()
     model = build_model(directory, use_cache=not no_cache)
     result = queries.find_subclasses(model, class_name)
-    formatters.subclasses(result, output_format, directory, console)
+    formatters.subclasses(result, OutputFormat(output_format), directory, console)
 
 
 @app.command()

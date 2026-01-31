@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from flow.stubs import StubLibrary
 
+from flow.enums import ResolutionKind, ResolutionMode
 from flow.models import (
     CallSite,
     CatchSite,
@@ -21,11 +22,8 @@ from flow.models import (
     ProgramModel,
     RaiseSite,
     ResolutionEdge,
-    ResolutionKind,
     compute_confidence,
 )
-
-ResolutionMode = Literal["strict", "default", "aggressive"]
 
 
 @dataclass(frozen=True)
@@ -222,13 +220,13 @@ def _create_resolution_edge(
 ) -> ResolutionEdge:
     """Create a ResolutionEdge from a CallSite."""
     if used_name_fallback:
-        kind: ResolutionKind = "name_fallback"
+        kind = ResolutionKind.NAME_FALLBACK
     elif is_polymorphic:
-        kind = "polymorphic"
+        kind = ResolutionKind.POLYMORPHIC
     else:
         kind = call_site.resolution_kind
 
-    is_heuristic = kind in ("name_fallback", "polymorphic")
+    is_heuristic = kind in (ResolutionKind.NAME_FALLBACK, ResolutionKind.POLYMORPHIC)
 
     return ResolutionEdge(
         caller=caller,
@@ -243,7 +241,7 @@ def _create_resolution_edge(
 def propagate_exceptions(
     model: ProgramModel,
     max_iterations: int = 100,
-    resolution_mode: ResolutionMode = "default",
+    resolution_mode: ResolutionMode = ResolutionMode.DEFAULT,
     stub_library: StubLibrary | None = None,
 ) -> PropagationResult:
     """
@@ -341,7 +339,9 @@ def propagate_exceptions(
                             if stub_exceptions:
                                 callee_exceptions = set(stub_exceptions)
 
-                    if resolution_mode == "strict" and (used_name_fallback or is_polymorphic):
+                    if resolution_mode == ResolutionMode.STRICT and (
+                        used_name_fallback or is_polymorphic
+                    ):
                         continue
 
                     for exc_type in callee_exceptions:

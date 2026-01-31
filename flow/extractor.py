@@ -7,6 +7,7 @@ import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
 from flow.detectors import detect_entrypoints, detect_global_handlers
+from flow.enums import ResolutionKind
 from flow.loader import load_detectors
 from flow.models import (
     CallSite,
@@ -367,7 +368,7 @@ class CodeExtractor(cst.CSTVisitor):
 
         callee_name: str
         callee_qualified: str | None = None
-        resolution_kind: str = "unresolved"
+        resolution_kind: ResolutionKind = ResolutionKind.UNRESOLVED
         is_method_call = False
 
         if isinstance(node.func, cst.Attribute):
@@ -381,21 +382,21 @@ class CodeExtractor(cst.CSTVisitor):
                     callee_qualified = (
                         f"{self.relative_path}::{'.'.join(self._class_stack)}.{callee_name}"
                     )
-                    resolution_kind = "self"
+                    resolution_kind = ResolutionKind.SELF
                 elif base_name in self._local_types:
                     type_name = self._local_types[base_name]
                     if type_name in self.import_map:
                         callee_qualified = f"{self.import_map[type_name]}.{callee_name}"
-                        resolution_kind = "constructor"
+                        resolution_kind = ResolutionKind.CONSTRUCTOR
                     else:
                         callee_qualified = f"{self.relative_path}::{type_name}.{callee_name}"
-                        resolution_kind = "constructor"
+                        resolution_kind = ResolutionKind.CONSTRUCTOR
 
         elif isinstance(node.func, cst.Name):
             callee_name = node.func.value
             if callee_name in self.import_map:
                 callee_qualified = self.import_map[callee_name]
-                resolution_kind = "import"
+                resolution_kind = ResolutionKind.IMPORT
         else:
             return True
 
@@ -448,7 +449,7 @@ class CodeExtractor(cst.CSTVisitor):
                         is_method_call=False,
                         caller_qualified=caller_qualified,
                         callee_qualified=dep_info.get("qualified"),
-                        resolution_kind="fastapi_depends",
+                        resolution_kind=ResolutionKind.FASTAPI_DEPENDS,
                     )
                 )
 

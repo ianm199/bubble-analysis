@@ -4,6 +4,7 @@ from pathlib import Path
 
 from flow.config import FlowConfig, load_config
 from flow.detectors import FRAMEWORK_EXCEPTION_RESPONSES
+from flow.enums import ConfidenceLevel, ResolutionKind, ResolutionMode
 from flow.extractor import extract_from_directory
 from flow.models import ResolutionEdge, compute_confidence
 from flow.propagation import propagate_exceptions
@@ -23,7 +24,7 @@ class TestResolutionEdgeAndConfidence:
                 callee="b",
                 file="f.py",
                 line=1,
-                resolution_kind="import",
+                resolution_kind=ResolutionKind.IMPORT,
                 is_heuristic=False,
             ),
             ResolutionEdge(
@@ -31,11 +32,11 @@ class TestResolutionEdgeAndConfidence:
                 callee="c",
                 file="f.py",
                 line=2,
-                resolution_kind="self",
+                resolution_kind=ResolutionKind.SELF,
                 is_heuristic=False,
             ),
         ]
-        assert compute_confidence(edges) == "high"
+        assert compute_confidence(edges) == ConfidenceLevel.HIGH
 
     def test_compute_confidence_medium(self):
         """Medium confidence when return_type resolution is used."""
@@ -45,11 +46,11 @@ class TestResolutionEdgeAndConfidence:
                 callee="b",
                 file="f.py",
                 line=1,
-                resolution_kind="return_type",
+                resolution_kind=ResolutionKind.RETURN_TYPE,
                 is_heuristic=False,
             ),
         ]
-        assert compute_confidence(edges) == "medium"
+        assert compute_confidence(edges) == ConfidenceLevel.MEDIUM
 
     def test_compute_confidence_low_name_fallback(self):
         """Low confidence when name_fallback is used."""
@@ -59,11 +60,11 @@ class TestResolutionEdgeAndConfidence:
                 callee="b",
                 file="f.py",
                 line=1,
-                resolution_kind="name_fallback",
+                resolution_kind=ResolutionKind.NAME_FALLBACK,
                 is_heuristic=True,
             ),
         ]
-        assert compute_confidence(edges) == "low"
+        assert compute_confidence(edges) == ConfidenceLevel.LOW
 
     def test_compute_confidence_low_polymorphic(self):
         """Low confidence when polymorphic resolution is used."""
@@ -73,15 +74,15 @@ class TestResolutionEdgeAndConfidence:
                 callee="b",
                 file="f.py",
                 line=1,
-                resolution_kind="polymorphic",
+                resolution_kind=ResolutionKind.POLYMORPHIC,
                 is_heuristic=True,
             ),
         ]
-        assert compute_confidence(edges) == "low"
+        assert compute_confidence(edges) == ConfidenceLevel.LOW
 
     def test_compute_confidence_empty_path(self):
         """High confidence for empty path (direct raise)."""
-        assert compute_confidence([]) == "high"
+        assert compute_confidence([]) == ConfidenceLevel.HIGH
 
 
 class TestResolutionModes:
@@ -91,8 +92,8 @@ class TestResolutionModes:
         """Strict mode filters out heuristic-based resolutions."""
         model = extract_from_directory(FIXTURES / "cli_scripts", use_cache=False)
 
-        default_result = propagate_exceptions(model, resolution_mode="default")
-        strict_result = propagate_exceptions(model, resolution_mode="strict")
+        default_result = propagate_exceptions(model, resolution_mode=ResolutionMode.DEFAULT)
+        strict_result = propagate_exceptions(model, resolution_mode=ResolutionMode.STRICT)
 
         default_total = sum(len(excs) for excs in default_result.propagated_raises.values())
         strict_total = sum(len(excs) for excs in strict_result.propagated_raises.values())
@@ -102,7 +103,7 @@ class TestResolutionModes:
     def test_default_mode_includes_fallback(self):
         """Default mode includes name_fallback resolutions."""
         model = extract_from_directory(FIXTURES / "cli_scripts", use_cache=False)
-        result = propagate_exceptions(model, resolution_mode="default")
+        result = propagate_exceptions(model, resolution_mode=ResolutionMode.DEFAULT)
 
         has_propagation = any(excs for excs in result.propagated_raises.values() if excs)
         assert has_propagation

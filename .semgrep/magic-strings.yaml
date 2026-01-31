@@ -8,13 +8,14 @@ rules:
           - pattern: $X.$FIELD == "$VALUE"
           - pattern: $X.$FIELD != "$VALUE"
           - pattern: $FIELD == "$VALUE"
+          - pattern: $FIELD != "$VALUE"
       - pattern-not: $FIELD = "$VALUE"
       - metavariable-regex:
           metavariable: $VALUE
           regex: ^[a-z][a-z0-9_]{1,20}$
       - metavariable-regex:
           metavariable: $FIELD
-          regex: ^(status|state|type|kind|mode|zone|role|phase|stage|level|category|visibility|permission)$|_status$|_state$|_type$|_kind$|_mode$
+          regex: ^(status|state|type|kind|mode|zone|role|phase|stage|level|category|visibility|permission|format|action|confidence)$|_status$|_state$|_type$|_kind$|_mode$|_format$|_action$
     paths:
       exclude:
         - "**/tests/"
@@ -37,18 +38,47 @@ rules:
 
         Then use: MyStatus.VALUE_A.value
 
-  - id: magic-string-in-list-python
-    message: "Magic string in list check for '$FIELD' - consider using enum values"
+  - id: magic-string-in-collection-python
+    message: "Magic string in collection check for '$FIELD' - consider using enum values"
     severity: WARNING
     languages: [python]
     patterns:
       - pattern-either:
           - pattern: $X.$FIELD in ["...", ...]
           - pattern: $X.$FIELD not in ["...", ...]
+          - pattern: $X.$FIELD in ("...", ...)
+          - pattern: $X.$FIELD not in ("...", ...)
+          - pattern: $X.$FIELD in {"...", ...}
+          - pattern: $X.$FIELD not in {"...", ...}
       - metavariable-regex:
           metavariable: $FIELD
-          regex: ^(status|state|type|kind|mode)$|_status$|_state$|_type$
+          regex: ^(status|state|type|kind|mode|format|action|confidence)$|_status$|_state$|_type$|_kind$|_mode$|_format$
     paths:
       exclude:
         - "**/tests/"
+        - "**/test_*.py"
+        - "**/*_test.py"
         - "**/schemas.py"
+        - "**/conftest.py"
+
+  - id: magic-string-dict-get-python
+    message: "Magic string comparison with .get() - consider using typed constants for '$KEY'"
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $X.get("$KEY") == "$VALUE"
+          - pattern: $X.get("$KEY") != "$VALUE"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: ^(framework|type|kind|status|mode|format|action)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^[a-z][a-z0-9_]{1,20}$
+    paths:
+      exclude:
+        - "**/tests/"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "**/schemas.py"
+        - "**/conftest.py"
