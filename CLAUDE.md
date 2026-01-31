@@ -18,6 +18,94 @@ The program model contains:
 - **Entrypoints**: HTTP routes (Flask/FastAPI) where execution begins
 - **Import maps**: Per-file mapping of local names to their source modules
 
+## Core Interfaces
+
+### Canonical Function Identity
+
+Every function in the codebase has a **canonical qualified name** used consistently across all data structures:
+
+```
+Format: relative_path::qualified_name
+
+Examples:
+  services.py::ServiceA.process    (method)
+  services.py::ServiceB.process    (method)
+  main.py::caller                  (function)
+  utils.py::helper_func            (function)
+```
+
+**Components:**
+- `relative_path`: Path from project root, with `.py` extension (e.g., `services.py`, `api/routes.py`)
+- `::`: Separator between path and name (double colon)
+- `qualified_name`: For methods `Class.method`, for functions just `function`
+
+**Why this matters:** Propagation connects raise sites to call sites by matching these names. If formats differ, exceptions won't propagate correctly.
+
+### Core Data Structures
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        ProgramModel                             │
+│  The central container built by extraction, queried by analysis │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  functions: dict[str, FunctionDef]                              │
+│    Key: "path::Class.method" or "path::function"                │
+│    Stores all function/method definitions                       │
+│                                                                 │
+│  raise_sites: list[RaiseSite]                                   │
+│    Each has: file (relative), function (qualified), exc_type    │
+│    Identifies: "path::Class.method" raised ExceptionType        │
+│                                                                 │
+│  call_sites: list[CallSite]                                     │
+│    Each has: caller_qualified, callee_qualified, resolution     │
+│    Identifies: "path::A.foo" calls "path::B.bar"                │
+│                                                                 │
+│  catch_sites: list[CatchSite]                                   │
+│    Each has: file, function (qualified), caught_types           │
+│    Identifies: "path::func" catches [ExceptionType, ...]        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+```
+Source Files
+     │
+     ▼
+┌─────────┐     Extracts definitions, calls, raises, catches
+│Extractor│     All use canonical "path::Class.method" format
+└────┬────┘
+     │
+     ▼
+┌─────────────┐
+│ProgramModel │  Central data structure
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐  Builds call graph, propagates exceptions
+│ Propagation │  Keys must match for lookups to work
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Queries   │  find_raises, find_callers, find_escapes, etc.
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Results   │  Typed dataclasses (RaisesResult, etc.)
+└─────────────┘
+```
+
+### Key Invariants
+
+1. **RaiseSite.function** uses qualified name: `ServiceA.process`, not `process`
+2. **RaiseSite.file** uses relative path: `services.py`, not absolute path
+3. **CallSite.caller_qualified** and **callee_qualified** use same format: `path::Class.method`
+4. **Propagation keys** match extraction format exactly
+
 ## Call Resolution Strategy
 
 Python is dynamic, so perfect static resolution is impossible. We use **layered resolution** with fallback:
@@ -121,16 +209,28 @@ def raises(exception_type, directory, include_subclasses, output_format, no_cach
 
 ### models.py
 
-Dataclasses for the program model. Key fields on `CallSite`:
-- `caller_qualified`: Always populated (`file.py::Class::func`)
-- `callee_qualified`: Populated when resolved, else None
-- `callee_name`: Always populated (bare name for fallback)
-- `resolution_kind`: How it was resolved ("import", "self", "constructor", "return_type", "name_fallback", "polymorphic", "stub", "unresolved")
+Dataclasses for the program model. All use canonical `path::Class.method` format.
 
-Trust-related data structures:
-- `ResolutionEdge`: Records a call resolution with metadata (caller, callee, resolution_kind, is_heuristic)
+**RaiseSite** - where an exception is raised:
+- `file`: Relative path (`services.py`)
+- `function`: Qualified name (`ServiceA.process` for methods, `helper` for functions)
+- `exception_type`: The exception class name
+
+**CallSite** - where a function is called:
+- `caller_qualified`: Always populated (`file.py::Class.func`)
+- `callee_qualified`: Populated when resolved (`file.py::Class.method`), else None
+- `callee_name`: Always populated (bare name for fallback)
+- `resolution_kind`: How it was resolved (import, self, constructor, module_attribute, return_type, name_fallback, polymorphic, stub, unresolved)
+
+**CatchSite** - where exceptions are caught:
+- `file`: Relative path
+- `function`: Qualified name
+- `caught_types`: List of exception types caught
+
+**Trust-related data structures:**
+- `ResolutionEdge`: Records a call resolution with metadata (caller, callee, resolution_kind, is_heuristic, match_count)
 - `ExceptionEvidence`: Combines raise site, call path, and confidence level
-- `compute_confidence()`: Derives high/medium/low from resolution kinds in a path
+- `compute_confidence()`: Derives high/medium/low from resolution kinds and match_count in a path
 
 ### extractor.py
 

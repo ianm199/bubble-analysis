@@ -191,13 +191,16 @@ def exception_is_caught(
 
 def _build_call_site_lookup(
     model: ProgramModel,
-) -> dict[tuple[str, str], CallSite]:
+) -> dict[tuple[str, str], list[CallSite]]:
     """Build a lookup from (caller, callee) pairs to CallSite objects."""
-    lookup: dict[tuple[str, str], CallSite] = {}
+    lookup: dict[tuple[str, str], list[CallSite]] = {}
     for cs in model.call_sites:
         caller = cs.caller_qualified or f"{cs.file}::{cs.caller_function}"
         callee = cs.callee_qualified or cs.callee_name
-        lookup[(caller, callee)] = cs
+        key = (caller, callee)
+        if key not in lookup:
+            lookup[key] = []
+        lookup[key].append(cs)
     return lookup
 
 
@@ -217,6 +220,7 @@ def _create_resolution_edge(
     callee: str,
     used_name_fallback: bool,
     is_polymorphic: bool,
+    match_count: int = 1,
 ) -> ResolutionEdge:
     """Create a ResolutionEdge from a CallSite."""
     if used_name_fallback:
@@ -235,7 +239,43 @@ def _create_resolution_edge(
         line=call_site.line,
         resolution_kind=kind,
         is_heuristic=is_heuristic,
+        match_count=match_count,
     )
+
+
+FallbackKey = tuple[str, bool]
+
+
+def _scoped_fallback_lookup(
+    callee_simple: str,
+    is_method: bool,
+    caller_file: str,
+    import_map: dict[str, str],
+    name_to_qualified: dict[FallbackKey, list[str]],
+) -> tuple[list[str], str]:
+    """Scoped fallback: same_file > direct_import > same_package > project."""
+    fallback_key = (callee_simple, is_method)
+    candidates = name_to_qualified.get(fallback_key, [])
+
+    if not candidates:
+        return [], "none"
+
+    same_file = [c for c in candidates if c.startswith(f"{caller_file}::")]
+    if same_file:
+        return same_file, "same_file"
+
+    imported_modules = set(import_map.values())
+    direct_imports = [c for c in candidates if any(c.startswith(mod) for mod in imported_modules)]
+    if direct_imports:
+        return direct_imports, "direct_import"
+
+    caller_dir = "/".join(caller_file.split("/")[:-1]) if "/" in caller_file else ""
+    if caller_dir:
+        same_package = [c for c in candidates if c.split("::")[0].startswith(caller_dir + "/")]
+        if same_package:
+            return same_package, "same_package"
+
+    return candidates, "project"
 
 
 def propagate_exceptions(
@@ -277,15 +317,16 @@ def propagate_exceptions(
                         path=(),
                     )
 
-    name_to_qualified: dict[str, list[str]] = {}
-    for qualified_key in propagated:
-        simple_name = qualified_key.split("::")[-1].split(".")[-1]
-        if simple_name not in name_to_qualified:
-            name_to_qualified[simple_name] = []
-        name_to_qualified[simple_name].append(qualified_key)
-
+    name_to_qualified: dict[FallbackKey, list[str]] = {}
     method_to_qualified: dict[str, list[str]] = {}
     for qualified_key in propagated:
+        simple_name = qualified_key.split("::")[-1].split(".")[-1]
+        is_method = "." in qualified_key.split("::")[-1] if "::" in qualified_key else False
+        fallback_key: FallbackKey = (simple_name, is_method)
+        if fallback_key not in name_to_qualified:
+            name_to_qualified[fallback_key] = []
+        name_to_qualified[fallback_key].append(qualified_key)
+
         if "::" in qualified_key:
             method_name = qualified_key.split("::")[-1].split(".")[-1]
             if method_name not in method_to_qualified:
@@ -302,7 +343,8 @@ def propagate_exceptions(
                 propagated_evidence[caller] = {}
 
             for callee in callees:
-                call_site = call_site_lookup.get((caller, callee))
+                call_sites = call_site_lookup.get((caller, callee), [])
+                call_site = call_sites[0] if call_sites else None
                 expanded_callees = expand_polymorphic_call(
                     callee, model.exception_hierarchy, method_to_qualified
                 )
@@ -310,6 +352,7 @@ def propagate_exceptions(
 
                 for expanded_callee in expanded_callees:
                     used_name_fallback = False
+                    fallback_match_count = 1
                     callee_exceptions = propagated.get(expanded_callee, set())
                     callee_evidence = propagated_evidence.get(expanded_callee, {})
 
@@ -319,7 +362,16 @@ def propagate_exceptions(
                             if "::" in expanded_callee
                             else expanded_callee.split(".")[-1]
                         )
-                        for qualified_key in name_to_qualified.get(callee_simple, []):
+                        is_method = call_site.is_method_call if call_site else False
+                        caller_file = caller.split("::")[0] if "::" in caller else caller
+                        import_map = model.import_maps.get(caller_file, {})
+
+                        matched_keys, _ = _scoped_fallback_lookup(
+                            callee_simple, is_method, caller_file, import_map, name_to_qualified
+                        )
+                        fallback_match_count = len(matched_keys) if matched_keys else 1
+
+                        for qualified_key in matched_keys:
                             callee_exceptions = callee_exceptions | propagated.get(
                                 qualified_key, set()
                             )
@@ -361,10 +413,14 @@ def propagate_exceptions(
                             caller_simple = (
                                 caller.split("::")[-1].split(".")[-1] if "::" in caller else caller
                             )
-                            if caller_simple not in name_to_qualified:
-                                name_to_qualified[caller_simple] = []
-                            if caller not in name_to_qualified[caller_simple]:
-                                name_to_qualified[caller_simple].append(caller)
+                            caller_is_method = (
+                                "." in caller.split("::")[-1] if "::" in caller else False
+                            )
+                            caller_fallback_key: FallbackKey = (caller_simple, caller_is_method)
+                            if caller_fallback_key not in name_to_qualified:
+                                name_to_qualified[caller_fallback_key] = []
+                            if caller not in name_to_qualified[caller_fallback_key]:
+                                name_to_qualified[caller_fallback_key].append(caller)
 
                         if not is_caught:
                             for key, prop_raise in callee_evidence.items():
@@ -380,6 +436,7 @@ def propagate_exceptions(
                                     expanded_callee,
                                     used_name_fallback,
                                     is_polymorphic,
+                                    fallback_match_count,
                                 )
                                 new_path = (edge,) + prop_raise.path
                                 propagated_evidence[caller][key] = PropagatedRaise(

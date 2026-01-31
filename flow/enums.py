@@ -56,6 +56,7 @@ class ResolutionKind(str, Enum):
     SELF = "self"
     CONSTRUCTOR = "constructor"
     RETURN_TYPE = "return_type"
+    MODULE_ATTRIBUTE = "module_attribute"
     NAME_FALLBACK = "name_fallback"
     POLYMORPHIC = "polymorphic"
     STUB = "stub"

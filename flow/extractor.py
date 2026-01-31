@@ -286,7 +286,13 @@ class CodeExtractor(cst.CSTVisitor):
     def visit_Raise(self, node: cst.Raise) -> bool:
         pos = self.get_metadata(PositionProvider, node)
 
-        current_function = self._function_stack[-1] if self._function_stack else "<module>"
+        if self._function_stack:
+            if self._class_stack:
+                qualified_function = ".".join(self._class_stack + [self._function_stack[-1]])
+            else:
+                qualified_function = self._function_stack[-1]
+        else:
+            qualified_function = "<module>"
 
         is_bare_raise = node.exc is None
 
@@ -310,9 +316,9 @@ class CodeExtractor(cst.CSTVisitor):
 
         self.raise_sites.append(
             RaiseSite(
-                file=self.file_path,
+                file=self.relative_path,
                 line=pos.start.line,
-                function=current_function,
+                function=qualified_function,
                 exception_type=exception_type,
                 is_bare_raise=is_bare_raise,
                 code=code.strip(),
@@ -324,7 +330,14 @@ class CodeExtractor(cst.CSTVisitor):
 
     def visit_Try(self, node: cst.Try) -> bool:
         self.get_metadata(PositionProvider, node)
-        current_function = self._function_stack[-1] if self._function_stack else "<module>"
+
+        if self._function_stack:
+            if self._class_stack:
+                qualified_function = ".".join(self._class_stack + [self._function_stack[-1]])
+            else:
+                qualified_function = self._function_stack[-1]
+        else:
+            qualified_function = "<module>"
 
         for handler in node.handlers:
             caught_types: list[str] = []
@@ -349,9 +362,9 @@ class CodeExtractor(cst.CSTVisitor):
 
             self.catch_sites.append(
                 CatchSite(
-                    file=self.file_path,
+                    file=self.relative_path,
                     line=handler_pos.start.line,
-                    function=current_function,
+                    function=qualified_function,
                     caught_types=caught_types,
                     has_bare_except=has_bare_except,
                     has_reraise=has_reraise,
@@ -391,6 +404,11 @@ class CodeExtractor(cst.CSTVisitor):
                     else:
                         callee_qualified = f"{self.relative_path}::{type_name}.{callee_name}"
                         resolution_kind = ResolutionKind.CONSTRUCTOR
+                elif base_name in self.import_map:
+                    module_qualified = self.import_map[base_name]
+                    callee_qualified = f"{module_qualified}.{callee_name}"
+                    resolution_kind = ResolutionKind.MODULE_ATTRIBUTE
+                    is_method_call = False
 
         elif isinstance(node.func, cst.Name):
             callee_name = node.func.value

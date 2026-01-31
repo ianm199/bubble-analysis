@@ -52,8 +52,8 @@ class TestResolutionEdgeAndConfidence:
         ]
         assert compute_confidence(edges) == ConfidenceLevel.MEDIUM
 
-    def test_compute_confidence_low_name_fallback(self):
-        """Low confidence when name_fallback is used."""
+    def test_compute_confidence_medium_unambiguous_name_fallback(self):
+        """Medium confidence when unambiguous name_fallback is used (match_count=1)."""
         edges = [
             ResolutionEdge(
                 caller="a",
@@ -62,6 +62,22 @@ class TestResolutionEdgeAndConfidence:
                 line=1,
                 resolution_kind=ResolutionKind.NAME_FALLBACK,
                 is_heuristic=True,
+                match_count=1,
+            ),
+        ]
+        assert compute_confidence(edges) == ConfidenceLevel.MEDIUM
+
+    def test_compute_confidence_low_ambiguous_name_fallback(self):
+        """Low confidence when ambiguous name_fallback is used (match_count>1)."""
+        edges = [
+            ResolutionEdge(
+                caller="a",
+                callee="b",
+                file="f.py",
+                line=1,
+                resolution_kind=ResolutionKind.NAME_FALLBACK,
+                is_heuristic=True,
+                match_count=3,
             ),
         ]
         assert compute_confidence(edges) == ConfidenceLevel.LOW

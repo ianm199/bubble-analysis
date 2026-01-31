@@ -43,6 +43,12 @@ def mixed_model() -> ProgramModel:
 
 
 @pytest.fixture
+def resolution_model() -> ProgramModel:
+    """Pre-built model for resolution_test fixture."""
+    return extract_from_directory(FIXTURES / "resolution_test", use_cache=False)
+
+
+@pytest.fixture
 def temp_project():
     """Create a temporary project directory."""
     with tempfile.TemporaryDirectory() as tmpdir:

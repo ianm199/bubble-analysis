@@ -105,6 +105,7 @@ class ResolutionEdge:
     line: int
     resolution_kind: ResolutionKind
     is_heuristic: bool
+    match_count: int = 1
 
 
 @dataclass
@@ -118,13 +119,28 @@ class ExceptionEvidence:
 
 def compute_confidence(edges: list[ResolutionEdge]) -> ConfidenceLevel:
     """Compute confidence level based on resolution kinds in the path."""
-    if any(
-        e.resolution_kind in (ResolutionKind.NAME_FALLBACK, ResolutionKind.POLYMORPHIC)
-        for e in edges
-    ):
+    if not edges:
+        return ConfidenceLevel.HIGH
+
+    has_ambiguous_fallback = any(
+        e.resolution_kind == ResolutionKind.NAME_FALLBACK and e.match_count > 1 for e in edges
+    )
+    if has_ambiguous_fallback:
         return ConfidenceLevel.LOW
+
+    has_polymorphic = any(e.resolution_kind == ResolutionKind.POLYMORPHIC for e in edges)
+    if has_polymorphic:
+        return ConfidenceLevel.LOW
+
+    has_unambiguous_fallback = any(
+        e.resolution_kind == ResolutionKind.NAME_FALLBACK and e.match_count == 1 for e in edges
+    )
+    if has_unambiguous_fallback:
+        return ConfidenceLevel.MEDIUM
+
     if any(e.resolution_kind == ResolutionKind.RETURN_TYPE for e in edges):
         return ConfidenceLevel.MEDIUM
+
     return ConfidenceLevel.HIGH
 
 
