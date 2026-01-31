@@ -49,7 +49,7 @@ flow callers <function> -r         # Who calls this, with resolution info
 | Codebase Type | Flow's Value | Primary Use Case |
 |---------------|--------------|------------------|
 | Flask/FastAPI apps | **High** - finds real bugs | Catch uncaught exceptions before they become 500s |
-| Django apps | Medium (no route detection yet) | Manual analysis with `raises`/`escapes` |
+| Django apps | **High** - finds real bugs | Same as Flask/FastAPI, now with `flow django` support |
 | Libraries | **Documentation only** | Generate "what can this raise?" docs |
 | CLI tools | Medium | Check `if __name__ == "__main__"` error handling |
 
@@ -123,7 +123,112 @@ flow escapes get                   # What can escape from requests.get()
 
 ## Target Repositories
 
-### Tier 1: Validation (Flask/FastAPI - should work)
+### Tier 1: High-Impact "Banger" Targets 🎯
+
+These are high-profile projects where finding a bug would generate serious attention. Priority order.
+
+| Repository | Framework | Size | Why It's a Banger | Status |
+|------------|-----------|------|-------------------|--------|
+| **Sentry** | Django + some Flask | Massive | Finding bugs in an *error tracker* is peak irony | 📋 TODO |
+| **Airflow** | Flask | Large | Apache project, millions of users, web UI | 📋 TODO |
+| **Superset** | Flask | Large | Apache project, widely-used BI tool | 📋 TODO |
+
+#### Sentry Dogfooding Plan
+
+```bash
+# Clone (warning: large repo)
+cd /tmp
+git clone --depth 1 https://github.com/getsentry/sentry
+cd sentry
+
+# Sentry has multiple components - focus on the web app
+cd src/sentry
+
+# Basic analysis
+flow stats --no-cache
+flow django entrypoints      # Django routes
+flow django audit            # Find escaping exceptions
+
+# If Django routes found, trace specific exceptions
+flow django routes-to ValidationError
+flow django routes-to PermissionDenied
+flow django routes-to ObjectDoesNotExist
+
+# Also check their API layer (may have Flask/DRF components)
+flow flask entrypoints 2>&1 || echo "No Flask"
+flow fastapi entrypoints 2>&1 || echo "No FastAPI"
+```
+
+**What to look for:**
+- Unhandled exceptions in webhook handlers (external input)
+- Missing error handling in integration endpoints (GitHub, Slack, etc.)
+- Exceptions in user-facing views that could leak to 500s
+
+**Why this matters:** If you find a bug in Sentry, you can file an issue saying "I found this bug using my exception flow analyzer" - that's the kind of story that gets retweeted.
+
+#### Airflow Dogfooding Plan
+
+```bash
+cd /tmp
+git clone --depth 1 https://github.com/apache/airflow
+cd airflow
+
+# Airflow's web UI is Flask-based
+cd airflow/www
+
+flow stats --no-cache
+flow flask entrypoints
+flow flask audit
+
+# Trace specific exceptions
+flow flask routes-to AirflowException
+flow flask routes-to ValueError
+flow flask routes-to PermissionError
+
+# Deep dive on interesting routes
+flow escapes trigger_dag      # DAG triggering
+flow escapes task_instance    # Task management
+```
+
+**What to look for:**
+- Unhandled exceptions in DAG management endpoints
+- Missing validation on user-provided DAG parameters
+- Exceptions in authentication/authorization paths
+
+**Why this matters:** Apache Airflow is used by Netflix, Airbnb, and thousands of companies. A bug found here has real-world impact.
+
+#### Superset Dogfooding Plan
+
+```bash
+cd /tmp
+git clone --depth 1 https://github.com/apache/superset
+cd superset
+
+# Superset is Flask-based
+flow stats --no-cache
+flow flask entrypoints
+flow flask audit
+
+# Check for SQL injection-adjacent issues (exceptions from bad queries)
+flow flask routes-to SQLAlchemyError
+flow flask routes-to DatabaseError
+flow raises ProgrammingError -s
+
+# Check authentication paths
+flow escapes login
+flow escapes oauth_authorized
+```
+
+**What to look for:**
+- Unhandled database exceptions in query endpoints
+- Missing validation on user-provided SQL/chart configs
+- Authentication edge cases
+
+**Why this matters:** Superset handles database credentials and runs queries - exception leaks could reveal sensitive info.
+
+---
+
+### Tier 2: Validation (Flask/FastAPI - known to work)
 
 | Repository | Framework | Size | Status | Clone Command |
 |------------|-----------|------|--------|---------------|
@@ -131,15 +236,17 @@ flow escapes get                   # What can escape from requests.get()
 | Starlette | FastAPI-adjacent | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/starlette` |
 | Label Studio | Flask | Large | 📋 TODO | `git clone --depth 1 https://github.com/HumanSignal/label-studio` |
 
-### Tier 2: Gap Analysis (Django - not yet supported)
+### Tier 3: Django (now supported!)
 
 | Repository | Framework | Size | Status | Clone Command |
 |------------|-----------|------|--------|---------------|
 | Django REST Framework | Django | Medium | 📋 TODO | `git clone --depth 1 https://github.com/encode/django-rest-framework` |
 | Zulip | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/zulip/zulip` |
 | Wagtail | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/wagtail/wagtail` |
+| Authentik | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/goauthentik/authentik` |
+| Netbox | Django | Large | 📋 TODO | `git clone --depth 1 https://github.com/netbox-community/netbox` |
 
-### Tier 3: Libraries (Exception-heavy)
+### Tier 4: Libraries (Documentation value only)
 
 | Repository | Type | Status | Clone Command |
 |------------|------|--------|---------------|
@@ -345,8 +452,8 @@ The goal is to answer: **"If I used this tool in CI, would it catch real bugs wi
 |-----------|------------------|-------------------|
 | Flask app | `flow flask audit`, `flow flask routes-to <Exc>` | `flow escapes <handler>` |
 | FastAPI app | `flow fastapi audit`, `flow fastapi routes-to <Exc>` | `flow escapes <handler>` |
+| Django app | `flow django audit`, `flow django routes-to <Exc>` | `flow escapes <view>` |
 | Library | `flow exceptions`, `flow raises <Exc> -s` | `flow escapes <public_func>` |
-| Django app | `flow raises <Exc>`, `flow escapes <view>` | Document missing patterns |
 
 ## Running the Full Suite
 
