@@ -258,6 +258,8 @@ def _create_resolution_edge(
 
 
 FallbackKey = tuple[str, bool]
+FallbackCacheKey = tuple[str, bool, str]
+_fallback_cache: dict[FallbackCacheKey, tuple[list[str], str]] = {}
 
 
 def _scoped_fallback_lookup(
@@ -268,28 +270,42 @@ def _scoped_fallback_lookup(
     name_to_qualified: dict[FallbackKey, list[str]],
 ) -> tuple[list[str], str]:
     """Scoped fallback: same_file > direct_import > same_package > project."""
+    cache_key: FallbackCacheKey = (callee_simple, is_method, caller_file)
+    if cache_key in _fallback_cache:
+        return _fallback_cache[cache_key]
+
     fallback_key = (callee_simple, is_method)
     candidates = name_to_qualified.get(fallback_key, [])
 
     if not candidates:
-        return [], "none"
+        result = ([], "none")
+        _fallback_cache[cache_key] = result
+        return result
 
     same_file = [c for c in candidates if c.startswith(f"{caller_file}::")]
     if same_file:
-        return same_file, "same_file"
+        result = (same_file, "same_file")
+        _fallback_cache[cache_key] = result
+        return result
 
     imported_modules = set(import_map.values())
     direct_imports = [c for c in candidates if any(c.startswith(mod) for mod in imported_modules)]
     if direct_imports:
-        return direct_imports, "direct_import"
+        result = (direct_imports, "direct_import")
+        _fallback_cache[cache_key] = result
+        return result
 
     caller_dir = "/".join(caller_file.split("/")[:-1]) if "/" in caller_file else ""
     if caller_dir:
         same_package = [c for c in candidates if c.split("::")[0].startswith(caller_dir + "/")]
         if same_package:
-            return same_package, "same_package"
+            result = (same_package, "same_package")
+            _fallback_cache[cache_key] = result
+            return result
 
-    return candidates, "project"
+    result = (candidates, "project")
+    _fallback_cache[cache_key] = result
+    return result
 
 
 def propagate_exceptions(
@@ -355,7 +371,13 @@ def propagate_exceptions(
             method_to_qualified[method_name].append(qualified_key)
 
     with timing.timed("propagation_fixpoint"):
+        iteration_count = 0
+        total_fallback_lookups = 0
+        total_catch_checks = 0
+        total_propagations = 0
+
         for _ in range(max_iterations):
+            iteration_count += 1
             changed = False
 
             for caller, callees in forward_graph.items():
@@ -388,6 +410,7 @@ def propagate_exceptions(
                             caller_file = caller.split("::")[0] if "::" in caller else caller
                             import_map = model.import_maps.get(caller_file, {})
 
+                            total_fallback_lookups += 1
                             matched_keys, _ = _scoped_fallback_lookup(
                                 callee_simple,
                                 is_method,
@@ -427,6 +450,7 @@ def propagate_exceptions(
                             is_caught = False
 
                             for catch_site in catches:
+                                total_catch_checks += 1
                                 if exception_is_caught(
                                     exc_type, catch_site, model.exception_hierarchy
                                 ):
@@ -436,6 +460,7 @@ def propagate_exceptions(
 
                             if not is_caught and exc_type not in propagated[caller]:
                                 propagated[caller].add(exc_type)
+                                total_propagations += 1
                                 changed = True
 
                                 caller_simple = (
@@ -481,6 +506,14 @@ def propagate_exceptions(
             if not changed:
                 break
 
+        if timing.is_enabled():
+            timing.record_count("propagation_iterations", iteration_count)
+            timing.record_count("propagation_fallback_lookups", total_fallback_lookups)
+            timing.record_count("propagation_catch_checks", total_catch_checks)
+            timing.record_count("propagation_new_exceptions", total_propagations)
+            timing.record_count("propagation_call_graph_size", len(forward_graph))
+            timing.record_count("propagation_functions_with_raises", len(propagated))
+
     result = PropagationResult(
         direct_raises=direct_raises,
         propagated_raises=propagated,
@@ -499,6 +532,7 @@ def clear_propagation_cache() -> None:
     fresh propagation results.
     """
     _propagation_cache.clear()
+    _fallback_cache.clear()
 
 
 def compute_reachable_functions(
