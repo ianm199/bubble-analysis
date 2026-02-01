@@ -121,33 +121,44 @@ async_boundaries:
 
 This filters out 258 false positives, leaving real issues.
 
-#### Bug #1: Alert Rule Trigger Validation
+#### Bug #1: Email Validation Inconsistency
 
 **Call path**:
 ```
-POST /api/0/organizations/{org}/alert-rules/
-  → OrganizationAlertRuleIndexEndpoint.post()
-    → AlertRuleSerializer.create()
-      → create_alert_rule_trigger_action()
-        → raise InvalidTriggerActionError("Must specify specific target type")
+POST /api/0/users/{user_id}/emails/
+  → UserEmailsEndpoint.post()
+    → add_email(email, user)
+      → raise InvalidEmailError  # NOT CAUGHT!
 ```
 
-**Code**: [src/sentry/incidents/logic.py:1370](https://github.com/getsentry/sentry/blob/master/src/sentry/incidents/logic.py#L1370)
+**Code**: [src/sentry/users/api/endpoints/user_emails.py:45](https://github.com/getsentry/sentry/blob/master/src/sentry/users/api/endpoints/user_emails.py#L45)
 ```python
-def create_alert_rule_trigger_action(...):
-    if target_type == AlertRuleTriggerAction.TargetType.SPECIFIC:
-        if not target_identifier:
-            raise InvalidTriggerActionError("Must specify specific target type")
+def add_email(email: str, user: User) -> UserEmail:
+    if email is None:
+        raise InvalidEmailError  # ← Not caught!
+    # ...
+    if UserEmail.objects.filter(...).exists():
+        raise DuplicateEmailError  # ← This one IS caught!
+```
+
+**The inconsistency** ([line 154](https://github.com/getsentry/sentry/blob/master/src/sentry/users/api/endpoints/user_emails.py#L154)):
+```python
+except DuplicateEmailError:
+    return self.respond({"detail": "Email already associated"}, status=409)
+# InvalidEmailError NOT in except clause → 500!
 ```
 
 **Reproduce**:
 ```bash
-flow raises InvalidTriggerActionError -d /tmp/sentry
-# Shows 18 raise sites, none caught at endpoint level
+flow raises InvalidEmailError -d /tmp/sentry
+# Shows 2 raise sites at lines 45 and 70
+
+flow catches InvalidEmailError -d /tmp/sentry
+# Shows only generic "except Exception" handlers, not specific catch
 ```
 
 **What users see**: 500 Internal Server Error
-**What they should see**: "Must specify a target for this notification type" (400)
+**What they should see**: "Invalid email address" (400) - like `DuplicateEmailError` gets a proper 409
 
 #### Bug #2: OAuth Misconfiguration
 
@@ -176,26 +187,6 @@ flow raises KeyError -d /tmp/sentry | grep oauth2
 
 **What users see**: 500 on self-hosted Sentry when clicking "Connect GitHub"
 **What they should see**: "GitHub integration not configured. Check GITHUB_APP_ID in settings."
-
-#### Bug #3: Email Validation
-
-**Call path**:
-```
-POST /api/0/users/{user_id}/emails/
-  → UserEmailsEndpoint.post()
-    → add_email(email, user)
-      → raise InvalidEmailError
-```
-
-**Code**: [src/sentry/users/api/endpoints/user_emails.py:45](https://github.com/getsentry/sentry/blob/master/src/sentry/users/api/endpoints/user_emails.py#L45)
-```python
-def add_email(email: str, user: User) -> UserEmail:
-    if email is None:
-        raise InvalidEmailError  # Not caught!
-```
-
-**What users see**: 500 when adding email to account
-**What they should see**: "Invalid email address" (400)
 
 ### Superset: ValueError in Validation
 
