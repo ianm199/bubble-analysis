@@ -1,0 +1,363 @@
+
+Scanning 4 flask entrypoints...
+
+2 entrypoints have exception handling issues:
+
+  GET /repair_databricks_job/<string:dag_id>/<string:run_id>
+    AirflowNotFoundException 
+(task-sdk/src/airflow/sdk/definitions/connection.py:216) - only caught by 
+generic handler
+    AirflowNotFoundException 
+(task-sdk/src/airflow/sdk/execution_time/context.py:177) - only caught by 
+generic handler
+    ...and 13 more
+    AirflowRuntimeError (task-sdk/src/airflow/sdk/execution_time/comms.py:299) -
+only caught by generic handler
+    AirflowRuntimeError (task-sdk/src/airflow/sdk/execution_time/context.py:116)
+- only caught by generic handler
+    ...and 3 more
+    RuntimeError (task-sdk/src/airflow/sdk/execution_time/task_mapping.py:86) - 
+only caught by generic handler
+    RuntimeError (task-sdk/src/airflow/sdk/definitions/param.py:336) - only 
+caught by generic handler
+    ...and 130 more
+    AirflowConfigException 
+(providers/grpc/src/airflow/providers/grpc/hooks/grpc.py:110) - only caught by 
+generic handler
+    AirflowConfigException 
+(providers/grpc/src/airflow/providers/grpc/hooks/grpc.py:115) - only caught by 
+generic handler
+    ...and 38 more
+    ValueError (airflow-ctl/src/airflowctl/ctl/console_formatting.py:118) - only
+caught by generic handler
+    ValueError (airflow-ctl/src/airflowctl/ctl/console_formatting.py:125) - only
+caught by generic handler
+    ...and 509 more
+
+  GET /show/<pk>
+    CalledProcessError 
+(providers/google/src/airflow/providers/google/go_module_utils.py:56)
+    CalledProcessError 
+(providers/standard/src/airflow/providers/standard/utils/python_virtualenv.py:16
+5)
+    SystemExit 
+(airflow-ctl/src/airflowctl/ctl/commands/connection_command.py:41)
+    SystemExit 
+(airflow-ctl/src/airflowctl/ctl/commands/connection_command.py:47)
+    ...and 21 more
+    GoogleCloudError 
+(providers/google/src/airflow/providers/google/cloud/hooks/kubernetes_engine.py:
+153)
+    FailToCreateError 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/utils/k8s_resou
+rce_iterator.py:46)
+    EmptyResponseException 
+(providers/jenkins/src/airflow/providers/jenkins/operators/jenkins_job_trigger.p
+y:57)
+    JenkinsException 
+(providers/jenkins/src/airflow/providers/jenkins/operators/jenkins_job_trigger.p
+y:64)
+    JenkinsException 
+(providers/jenkins/src/airflow/providers/jenkins/operators/jenkins_job_trigger.p
+y:71)
+    HTTPError 
+(providers/google/src/airflow/providers/google/cloud/hooks/datafusion.py:185)
+    InvalidPath 
+(providers/hashicorp/src/airflow/providers/hashicorp/_internal_client/vault_clie
+nt.py:424)
+    NotFoundException 
+(providers/jenkins/src/airflow/providers/jenkins/operators/jenkins_job_trigger.p
+y:66)
+    RequestException 
+(providers/google/src/airflow/providers/google/cloud/hooks/datafusion.py:180)
+    RequestException 
+(providers/google/src/airflow/providers/google/cloud/hooks/datafusion.py:189)
+    _import_err 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/kube_client.py:
+119)
+    OverflowError (task-sdk/src/airflow/sdk/execution_time/comms.py:155) - only 
+caught by generic handler
+    OverflowError (airflow-core/src/airflow/jobs/triggerer_job_runner.py:814) - 
+only caught by generic handler
+    DagRunAlreadyExists (airflow-core/src/airflow/api/common/trigger_dag.py:106)
+- only caught by generic handler
+    ExternalTaskFailedError 
+(providers/google/src/airflow/providers/google/cloud/sensors/cloud_composer.py:6
+14) - only caught by generic handler
+    ExternalTaskFailedError 
+(providers/standard/src/airflow/providers/standard/sensors/external_task.py:374)
+- only caught by generic handler
+    AirflowClearRunningTaskException 
+(airflow-core/src/airflow/models/taskinstance.py:219) - only caught by generic 
+handler
+    AirflowRescheduleException (task-sdk/src/airflow/sdk/bases/sensor.py:245) - 
+only caught by generic handler
+    AirflowRescheduleException 
+(task-sdk/src/airflow/sdk/execution_time/task_runner.py:716) - only caught by 
+generic handler
+    DeserializingResultError 
+(providers/standard/src/airflow/providers/standard/operators/python.py:596) - 
+only caught by generic handler
+    AirflowBadRequest 
+(providers/amazon/src/airflow/providers/amazon/aws/hooks/datasync.py:109) - only
+caught by generic handler
+    AirflowBadRequest 
+(providers/amazon/src/airflow/providers/amazon/aws/hooks/datasync.py:203) - only
+caught by generic handler
+    ...and 20 more
+    RuntimeError (task-sdk/src/airflow/sdk/execution_time/task_mapping.py:86) - 
+only caught by generic handler
+    RuntimeError (task-sdk/src/airflow/sdk/definitions/param.py:336) - only 
+caught by generic handler
+    ...and 130 more
+    AzureDataFactoryPipelineRunException 
+(providers/microsoft/azure/src/airflow/providers/microsoft/azure/sensors/data_fa
+ctory.py:88) - only caught by generic handler
+    AzureDataFactoryPipelineRunException 
+(providers/microsoft/azure/src/airflow/providers/microsoft/azure/sensors/data_fa
+ctory.py:92) - only caught by generic handler
+    ...and 4 more
+    Exception 
+(devel-common/src/tests_common/test_utils/perf/perf_kit/repeat_and_time.py:100) 
+- only caught by generic handler
+    Exception 
+(devel-common/src/tests_common/test_utils/perf/perf_kit/repeat_and_time.py:111) 
+- only caught by generic handler
+    AirflowSkipException (task-sdk/src/airflow/sdk/bases/sensor.py:212) - only 
+caught by generic handler
+    AirflowSkipException (task-sdk/src/airflow/sdk/bases/sensor.py:214) - only 
+caught by generic handler
+    ...and 27 more
+    TimeoutException 
+(providers/jenkins/src/airflow/providers/jenkins/operators/jenkins_job_trigger.p
+y:69) - only caught by generic handler
+    AirflowWebHDFSHookException 
+(providers/apache/hdfs/src/airflow/providers/apache/hdfs/hooks/webhdfs.py:70) - 
+only caught by generic handler
+    AirflowCtlCredentialNotFoundException 
+(airflow-ctl/src/airflowctl/api/client.py:155) - only caught by generic handler
+    AirflowCtlCredentialNotFoundException 
+(airflow-ctl/src/airflowctl/api/client.py:198) - only caught by generic handler
+    FabException 
+(providers/fab/src/airflow/providers/fab/auth_manager/security_manager/override.
+py:1060) - only caught by generic handler
+    FabException 
+(providers/fab/src/airflow/providers/fab/auth_manager/security_manager/override.
+py:1074) - only caught by generic handler
+    ...and 4 more
+    _NotFullyPopulated 
+(task-sdk/src/airflow/sdk/definitions/_internal/expandinput.py:153) - only 
+caught by generic handler
+    IndexError (task-sdk/src/airflow/sdk/execution_time/lazy_sequence.py:163) - 
+only caught by generic handler
+    IndexError (task-sdk/src/airflow/sdk/definitions/xcom_arg.py:465) - only 
+caught by generic handler
+    ...and 4 more
+    EcsOperatorError 
+(providers/amazon/src/airflow/providers/amazon/aws/operators/ecs.py:628) - only 
+caught by generic handler
+    InvalidStatsNameException 
+(shared/observability/src/airflow_shared/observability/metrics/validators.py:161
+) - only caught by generic handler
+    InvalidStatsNameException 
+(shared/observability/src/airflow_shared/observability/metrics/validators.py:173
+) - only caught by generic handler
+    ...and 3 more
+    ImportError (airflow-ctl/src/airflowctl/utils/module_loading.py:32) - only 
+caught by generic handler
+    ImportError (airflow-ctl/src/airflowctl/utils/module_loading.py:39) - only 
+caught by generic handler
+    ...and 10 more
+    AirflowRuntimeError (task-sdk/src/airflow/sdk/execution_time/comms.py:299) -
+only caught by generic handler
+    AirflowRuntimeError (task-sdk/src/airflow/sdk/execution_time/context.py:116)
+- only caught by generic handler
+    ...and 3 more
+    DagRunTriggerException 
+(providers/standard/src/airflow/providers/standard/operators/trigger_dagrun.py:2
+77) - only caught by generic handler
+    AirflowConfigException 
+(providers/grpc/src/airflow/providers/grpc/hooks/grpc.py:110) - only caught by 
+generic handler
+    AirflowConfigException 
+(providers/grpc/src/airflow/providers/grpc/hooks/grpc.py:115) - only caught by 
+generic handler
+    ...and 38 more
+    ExternalDagFailedError 
+(providers/google/src/airflow/providers/google/cloud/sensors/cloud_composer.py:6
+32) - only caught by generic handler
+    ExternalDagFailedError 
+(providers/standard/src/airflow/providers/standard/sensors/external_task.py:392)
+- only caught by generic handler
+    EOFError (task-sdk/src/airflow/sdk/execution_time/comms.py:275) - only 
+caught by generic handler
+    EOFError (task-sdk/src/airflow/sdk/execution_time/comms.py:286) - only 
+caught by generic handler
+    ValueError (airflow-ctl/src/airflowctl/ctl/console_formatting.py:118) - only
+caught by generic handler
+    ValueError (airflow-ctl/src/airflowctl/ctl/console_formatting.py:125) - only
+caught by generic handler
+    ...and 509 more
+    ParamValidationError (task-sdk/src/airflow/sdk/definitions/param.py:81) - 
+only caught by generic handler
+    ParamValidationError (task-sdk/src/airflow/sdk/definitions/param.py:108) - 
+only caught by generic handler
+    ...and 3 more
+    EdgeWorkerVersionException 
+(providers/edge3/src/airflow/providers/edge3/cli/api_client.py:128) - only 
+caught by generic handler
+    EdgeWorkerVersionException 
+(providers/edge3/src/airflow/providers/edge3/cli/api_client.py:161) - only 
+caught by generic handler
+    KeyError (task-sdk/src/airflow/sdk/execution_time/context.py:723) - only 
+caught by generic handler
+    KeyError (task-sdk/src/airflow/sdk/execution_time/context.py:729) - only 
+caught by generic handler
+    ...and 11 more
+    AirflowOptionalProviderFeatureException 
+(providers/presto/src/airflow/providers/presto/hooks/presto.py:229) - only 
+caught by generic handler
+    AirflowOptionalProviderFeatureException 
+(providers/presto/src/airflow/providers/presto/hooks/presto.py:251) - only 
+caught by generic handler
+    ...and 31 more
+    EdgeWorkerDuplicateException 
+(providers/edge3/src/airflow/providers/edge3/cli/api_client.py:130) - only 
+caught by generic handler
+    GcpFieldValidationException 
+(providers/google/src/airflow/providers/google/cloud/operators/functions.py:202)
+- only caught by generic handler
+    GcpFieldValidationException 
+(providers/google/src/airflow/providers/google/cloud/utils/field_validator.py:21
+7) - only caught by generic handler
+    ...and 7 more
+    _ValidatorError (scripts/ci/prek/lint_json_schema.py:117) - only caught by 
+generic handler
+    ConflictException 
+(providers/google/src/airflow/providers/google/cloud/hooks/datafusion.py:187) - 
+only caught by generic handler
+    XComRetrievalError 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/utils/pod_manag
+er.py:854) - only caught by generic handler
+    XComRetrievalError 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/utils/pod_manag
+er.py:902) - only caught by generic handler
+    FileNotFoundError (task-sdk/src/airflow/sdk/configuration.py:58) - only 
+caught by generic handler
+    FileNotFoundError (task-sdk/src/airflow/sdk/io/path.py:336) - only caught by
+generic handler
+    ...and 9 more
+    NotImplementedError (task-sdk/src/airflow/sdk/bases/hook.py:93) - only 
+caught by generic handler
+    NotImplementedError 
+(task-sdk/src/airflow/sdk/execution_time/secrets/execution_api.py:44) - only 
+caught by generic handler
+    ...and 116 more
+    RecursionError (task-sdk/src/airflow/sdk/serde/__init__.py:123) - only 
+caught by generic handler
+    TypeError (task-sdk/src/airflow/sdk/bases/xcom.py:206) - only caught by 
+generic handler
+    TypeError (task-sdk/src/airflow/sdk/bases/xcom.py:260) - only caught by 
+generic handler
+    ...and 145 more
+    PodCredentialsExpiredFailure 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/operators/pod.p
+y:817) - only caught by generic handler
+    FoundMoreThanOnePodFailure 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/operators/pod.p
+y:583) - only caught by generic handler
+    AirflowPluginException 
+(shared/plugins_manager/src/airflow_shared/plugins_manager/plugins_manager.py:13
+5) - only caught by generic handler
+    AirflowPluginException 
+(shared/plugins_manager/src/airflow_shared/plugins_manager/plugins_manager.py:28
+4) - only caught by generic handler
+    ...and 1 more
+    DagNotFound 
+(providers/standard/src/airflow/providers/standard/operators/trigger_dagrun.py:3
+09) - only caught by generic handler
+    DagNotFound (airflow-core/src/airflow/api/common/trigger_dag.py:70) - only 
+caught by generic handler
+    ...and 2 more
+    TaskInstanceNotFound 
+(providers/databricks/src/airflow/providers/databricks/plugins/databricks_workfl
+ow.py:195) - only caught by generic handler
+    TooManyFilesToMoveException 
+(providers/microsoft/azure/src/airflow/providers/microsoft/azure/transfers/s3_to
+_wasb.py:205) - only caught by generic handler
+    AttributeError (task-sdk/src/airflow/sdk/__init__.py:211) - only caught by 
+generic handler
+    AttributeError (task-sdk/src/airflow/sdk/configuration.py:284) - only caught
+by generic handler
+    ...and 46 more
+    KubernetesApiException 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/utils/pod_manag
+er.py:811) - only caught by generic handler
+    KubernetesApiException 
+(providers/cncf/kubernetes/src/airflow/providers/cncf/kubernetes/utils/pod_manag
+er.py:819) - only caught by generic handler
+    GcpValidationSpecificationException 
+(providers/google/src/airflow/providers/google/cloud/utils/field_validator.py:22
+1) - only caught by generic handler
+    GcpValidationSpecificationException 
+(providers/google/src/airflow/providers/google/cloud/utils/field_validator.py:22
+7) - only caught by generic handler
+    ...and 4 more
+    AirflowNotFoundException 
+(task-sdk/src/airflow/sdk/definitions/connection.py:216) - only caught by 
+generic handler
+    AirflowNotFoundException 
+(task-sdk/src/airflow/sdk/execution_time/context.py:177) - only caught by 
+generic handler
+    ...and 13 more
+    EcsExecutorException 
+(providers/amazon/src/airflow/providers/amazon/aws/executors/ecs/ecs_executor.py
+:454) - only caught by generic handler
+    EcsExecutorException 
+(providers/amazon/src/airflow/providers/amazon/aws/executors/ecs/ecs_executor.py
+:570) - only caught by generic handler
+    DownstreamTasksSkipped 
+(providers/standard/src/airflow/providers/standard/utils/skipmixin.py:72) - only
+caught by generic handler
+    ExternalTaskGroupFailedError 
+(providers/google/src/airflow/providers/google/cloud/sensors/cloud_composer.py:6
+24) - only caught by generic handler
+    ExternalTaskGroupFailedError 
+(providers/standard/src/airflow/providers/standard/sensors/external_task.py:384)
+- only caught by generic handler
+    DbtCloudJobRunException 
+(providers/dbt/cloud/src/airflow/providers/dbt/cloud/sensors/dbt.py:83) - only 
+caught by generic handler
+    DbtCloudJobRunException 
+(providers/dbt/cloud/src/airflow/providers/dbt/cloud/sensors/dbt.py:87) - only 
+caught by generic handler
+    ...and 3 more
+    InvalidAzureBlobParameters 
+(providers/microsoft/azure/src/airflow/providers/microsoft/azure/transfers/s3_to
+_wasb.py:224) - only caught by generic handler
+    AirflowException (task-sdk/src/airflow/sdk/crypto.py:127) - only caught by 
+generic handler
+    AirflowException (task-sdk/src/airflow/sdk/bases/sensor.py:179) - only 
+caught by generic handler
+    ...and 1152 more
+
+2 entrypoints fully covered by exception handlers
+
+
+Timing breakdown:
+  parallel_extraction              70.498s
+  propagation_fixpoint             11.439s
+  file_discovery                    0.454s
+  propagation_setup                 0.026s
+  hierarchy_lookup                  0.012s  (6,807 calls, 0.00ms avg)
+  model_aggregation                 0.011s
+  cache_writes                      0.000s
+
+Propagation stats:
+  hierarchy_cache_hit            359,042
+    iterations                   8
+    fallback_lookups             580,024
+    catch_checks                 459,847
+    new_exceptions               483,673
+    call_graph_size              18,368
+    functions_with_raises        20,939
