@@ -8,6 +8,64 @@ from flow.integrations.base import (
     GlobalHandler,
 )
 
+BUILTIN_EXCEPTION_HIERARCHY: dict[str, list[str]] = {
+    "BaseException": [],
+    "Exception": ["BaseException"],
+    "ArithmeticError": ["Exception"],
+    "AssertionError": ["Exception"],
+    "AttributeError": ["Exception"],
+    "BlockingIOError": ["OSError"],
+    "BrokenPipeError": ["ConnectionError"],
+    "BufferError": ["Exception"],
+    "ChildProcessError": ["OSError"],
+    "ConnectionAbortedError": ["ConnectionError"],
+    "ConnectionError": ["OSError"],
+    "ConnectionRefusedError": ["ConnectionError"],
+    "ConnectionResetError": ["ConnectionError"],
+    "EOFError": ["Exception"],
+    "EnvironmentError": ["OSError"],
+    "FileExistsError": ["OSError"],
+    "FileNotFoundError": ["OSError"],
+    "FloatingPointError": ["ArithmeticError"],
+    "GeneratorExit": ["BaseException"],
+    "IOError": ["OSError"],
+    "ImportError": ["Exception"],
+    "IndentationError": ["SyntaxError"],
+    "IndexError": ["LookupError"],
+    "InterruptedError": ["OSError"],
+    "IsADirectoryError": ["OSError"],
+    "KeyboardInterrupt": ["BaseException"],
+    "KeyError": ["LookupError"],
+    "LookupError": ["Exception"],
+    "MemoryError": ["Exception"],
+    "ModuleNotFoundError": ["ImportError"],
+    "NameError": ["Exception"],
+    "NotADirectoryError": ["OSError"],
+    "NotImplementedError": ["RuntimeError"],
+    "OSError": ["Exception"],
+    "OverflowError": ["ArithmeticError"],
+    "PermissionError": ["OSError"],
+    "ProcessLookupError": ["OSError"],
+    "RecursionError": ["RuntimeError"],
+    "ReferenceError": ["Exception"],
+    "RuntimeError": ["Exception"],
+    "StopAsyncIteration": ["Exception"],
+    "StopIteration": ["Exception"],
+    "SyntaxError": ["Exception"],
+    "SystemError": ["Exception"],
+    "SystemExit": ["BaseException"],
+    "TabError": ["IndentationError"],
+    "TimeoutError": ["OSError"],
+    "TypeError": ["Exception"],
+    "UnboundLocalError": ["NameError"],
+    "UnicodeDecodeError": ["UnicodeError"],
+    "UnicodeEncodeError": ["UnicodeError"],
+    "UnicodeError": ["ValueError"],
+    "UnicodeTranslateError": ["UnicodeError"],
+    "ValueError": ["Exception"],
+    "ZeroDivisionError": ["ArithmeticError"],
+}
+
 __all__ = [
     "FunctionDef",
     "ClassDef",
@@ -172,6 +230,21 @@ class ClassHierarchy:
     classes: dict[str, ClassDef] = field(default_factory=dict)
     parent_map: dict[str, list[str]] = field(default_factory=dict)
     child_map: dict[str, list[str]] = field(default_factory=dict)
+    _subclass_cache: dict[tuple[str, str], bool] = field(default_factory=dict, repr=False)
+
+    def __post_init__(self) -> None:
+        """Bootstrap with built-in Python exceptions."""
+        self._bootstrap_builtins()
+
+    def _bootstrap_builtins(self) -> None:
+        """Add built-in Python exception hierarchy."""
+        for exc_name, parents in BUILTIN_EXCEPTION_HIERARCHY.items():
+            self.parent_map[exc_name] = parents
+            for parent in parents:
+                if parent not in self.child_map:
+                    self.child_map[parent] = []
+                if exc_name not in self.child_map[parent]:
+                    self.child_map[parent].append(exc_name)
 
     def add_class(self, cls: ClassDef) -> None:
         """Add a class to the hierarchy."""
@@ -184,6 +257,8 @@ class ClassHierarchy:
                 self.child_map[base_simple] = []
             if cls.name not in self.child_map[base_simple]:
                 self.child_map[base_simple].append(cls.name)
+
+        self._subclass_cache.clear()
 
     def get_all_subclasses(self, class_name: str) -> set[str]:
         """Get all subclasses of a class (direct and indirect)."""
@@ -208,8 +283,13 @@ class ClassHierarchy:
         if child == parent:
             return True
 
+        cache_key = (child, parent)
+        if cache_key in self._subclass_cache:
+            return self._subclass_cache[cache_key]
+
         visited: set[str] = set()
         to_check = [child]
+        result = False
 
         while to_check:
             current = to_check.pop()
@@ -221,10 +301,14 @@ class ClassHierarchy:
             for p in parents:
                 p_simple = p.split(".")[-1]
                 if p_simple == parent or p == parent:
-                    return True
+                    result = True
+                    break
+            if result:
+                break
             to_check.extend(p.split(".")[-1] for p in parents)
 
-        return False
+        self._subclass_cache[cache_key] = result
+        return result
 
     def is_abstract_method(self, class_name: str, method_name: str) -> bool:
         """Check if a method is abstract on a class."""

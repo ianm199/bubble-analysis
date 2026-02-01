@@ -8,9 +8,17 @@ from flow.integrations.base import Entrypoint, GlobalHandler
 
 
 class FlaskRouteVisitor(cst.CSTVisitor):
-    """Detects Flask route decorators (@app.route, @blueprint.route)."""
+    """
+    Detects Flask route decorators.
+
+    Supports:
+    - @app.route, @blueprint.route (standard Flask)
+    - @expose (Flask-AppBuilder)
+    """
 
     METADATA_DEPENDENCIES = (PositionProvider,)
+
+    ROUTE_DECORATOR_NAMES = {"route", "expose"}
 
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
@@ -43,10 +51,10 @@ class FlaskRouteVisitor(cst.CSTVisitor):
         call = decorator.decorator
 
         if isinstance(call.func, cst.Attribute):
-            if call.func.attr.value != "route":
+            if call.func.attr.value not in self.ROUTE_DECORATOR_NAMES:
                 return None
         elif isinstance(call.func, cst.Name):
-            if call.func.value != "route":
+            if call.func.value not in self.ROUTE_DECORATOR_NAMES:
                 return None
         else:
             return None
@@ -66,15 +74,28 @@ class FlaskRouteVisitor(cst.CSTVisitor):
         methods = ["GET"]
         for arg in call.args:
             if arg.keyword and arg.keyword.value == "methods":
-                if isinstance(arg.value, cst.List):
-                    methods = []
-                    for el in arg.value.elements:
-                        if isinstance(el.value, cst.SimpleString):
-                            methods.append(el.value.evaluated_value)
+                methods = self._extract_methods(arg.value)
 
         if path:
             return {"path": path, "method": methods[0] if methods else "GET"}
         return None
+
+    def _extract_methods(self, value: cst.BaseExpression) -> list[str]:
+        """
+        Extract HTTP methods from a list or tuple.
+
+        Handles both Flask-style lists and Flask-AppBuilder-style tuples:
+        - methods=["GET", "POST"]
+        - methods=("GET", "POST")
+        """
+        methods: list[str] = []
+        if isinstance(value, cst.List | cst.Tuple):
+            for el in value.elements:
+                if isinstance(el, cst.Element) and isinstance(el.value, cst.SimpleString):
+                    extracted = el.value.evaluated_value
+                    if extracted:
+                        methods.append(extracted)
+        return methods if methods else ["GET"]
 
 
 class FlaskErrorHandlerVisitor(cst.CSTVisitor):

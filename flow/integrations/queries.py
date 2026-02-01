@@ -99,9 +99,14 @@ def _compute_exception_flow_for_integration(
                 break
 
         if caught_by_handler:
-            if exc_type not in flow.caught_by_global:
-                flow.caught_by_global[exc_type] = []
-            flow.caught_by_global[exc_type].extend(raise_sites)
+            if caught_by_handler.is_generic:
+                if exc_type not in flow.caught_by_generic:
+                    flow.caught_by_generic[exc_type] = []
+                flow.caught_by_generic[exc_type].extend(raise_sites)
+            else:
+                if exc_type not in flow.caught_by_global:
+                    flow.caught_by_global[exc_type] = []
+                flow.caught_by_global[exc_type].extend(raise_sites)
             continue
 
         framework_response = integration.get_exception_response(exc_type)
@@ -145,19 +150,18 @@ def audit_integration(
             entrypoint.function, model, propagation, integration, global_handlers
         )
 
-        if flow.uncaught:
-            real_uncaught = {k: v for k, v in flow.uncaught.items() if k not in reraise_patterns}
+        real_uncaught = {k: v for k, v in flow.uncaught.items() if k not in reraise_patterns}
+        real_generic = {k: v for k, v in flow.caught_by_generic.items() if k not in reraise_patterns}
 
-            if real_uncaught:
-                issues.append(
-                    AuditIssue(
-                        entrypoint=entrypoint,
-                        uncaught=real_uncaught,
-                        caught=flow.caught_by_global,
-                    )
+        if real_uncaught or real_generic:
+            issues.append(
+                AuditIssue(
+                    entrypoint=entrypoint,
+                    uncaught=real_uncaught,
+                    caught_by_generic=real_generic,
+                    caught=flow.caught_by_global,
                 )
-            else:
-                clean_count += 1
+            )
         else:
             clean_count += 1
 
@@ -370,8 +374,9 @@ def trace_routes_to_exception(
 
     traces: list[EntrypointTrace] = []
     for raise_site in raise_sites:
+        qualified_function = f"{raise_site.file}::{raise_site.function}"
         paths = _trace_to_entrypoints(
-            raise_site.function,
+            qualified_function,
             qualified_graph,
             name_graph,
             entrypoint_functions,

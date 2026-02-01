@@ -22,10 +22,11 @@ class IntegrationData:
 
 @dataclass
 class AuditIssue:
-    """An entrypoint with uncaught exceptions."""
+    """An entrypoint with uncaught or poorly-handled exceptions."""
 
     entrypoint: Entrypoint
     uncaught: dict[str, list["RaiseSite"]]
+    caught_by_generic: dict[str, list["RaiseSite"]]
     caught: dict[str, list["RaiseSite"]]
 
 

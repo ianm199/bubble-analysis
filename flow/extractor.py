@@ -1,10 +1,16 @@
 """Extract structural information from Python source files using libcst."""
 
+import os
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
+
+if TYPE_CHECKING:
+    from flow.cache import FileCache
 
 from flow.detectors import detect_entrypoints, detect_global_handlers
 from flow.enums import ResolutionKind
@@ -633,6 +639,84 @@ def _should_exclude(path_str: str, exclude_dirs: Sequence[str]) -> bool:
     return False
 
 
+DRF_HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
+DRF_ACTION_METHODS = {"list", "create", "retrieve", "update", "partial_update", "destroy"}
+DRF_DISPATCH_METHODS = DRF_HTTP_METHODS | DRF_ACTION_METHODS
+
+
+def _extract_single_file(
+    file_path: Path,
+    relative_path: str,
+    cache: "FileCache | None",
+) -> tuple[str, FileExtraction]:
+    """Extract from a single file, using cache if available.
+
+    This function is designed to be called from a ThreadPoolExecutor.
+    """
+    extraction = None
+    if cache:
+        extraction = cache.get(file_path)
+
+    if extraction is None:
+        extraction = extract_from_file(file_path, relative_path)
+
+    return (relative_path, extraction)
+
+
+def _inject_drf_dispatch_calls(model: ProgramModel) -> None:
+    """Inject synthetic call edges for Django/DRF class-based view dispatch.
+
+    When a DRF view class is detected as an entrypoint, this creates CallSite
+    entries from the view class to each HTTP method handler (get, post, etc.)
+    that exists on the class.
+    """
+    drf_view_entrypoints = [
+        ep
+        for ep in model.entrypoints
+        if ep.metadata.get("framework") == "django" and ep.metadata.get("view_type") == "class"
+    ]
+
+    for entrypoint in drf_view_entrypoints:
+        view_class = entrypoint.function
+        view_file = entrypoint.file
+        view_line = entrypoint.line
+
+        for _func_key, func_def in model.functions.items():
+            if not func_def.is_method:
+                continue
+            if func_def.class_name != view_class:
+                continue
+            if func_def.name not in DRF_DISPATCH_METHODS:
+                continue
+
+            relative_file = view_file
+            if "/" in relative_file or "\\" in relative_file:
+                pass
+            else:
+                for key in model.functions:
+                    if view_class in key and func_def.name in key:
+                        parts = key.split(":")
+                        if parts:
+                            relative_file = parts[0]
+                        break
+
+            caller_qualified = f"{relative_file}::{view_class}"
+            callee_qualified = f"{relative_file}::{view_class}.{func_def.name}"
+
+            model.call_sites.append(
+                CallSite(
+                    file=view_file,
+                    line=view_line,
+                    caller_function=view_class,
+                    callee_name=func_def.name,
+                    is_method_call=True,
+                    caller_qualified=caller_qualified,
+                    callee_qualified=callee_qualified,
+                    resolution_kind=ResolutionKind.IMPLICIT_DISPATCH,
+                )
+            )
+
+
 def extract_from_directory(
     directory: Path,
     exclude_dirs: Sequence[str] | None = None,
@@ -665,22 +749,35 @@ def extract_from_directory(
 
     python_files = list(directory.rglob("*.py"))
 
+    work_items: list[tuple[Path, str]] = []
     for file_path in python_files:
         relative_path = file_path.relative_to(directory)
         path_str = str(relative_path)
+        if not _should_exclude(path_str, exclude_dirs):
+            work_items.append((file_path, path_str))
 
-        if _should_exclude(path_str, exclude_dirs):
-            continue
+    extractions: list[tuple[str, FileExtraction]] = []
+    cache_misses: list[tuple[Path, str, FileExtraction]] = []
 
-        extraction = None
-        if cache:
-            extraction = cache.get(file_path)
+    max_workers = min(32, (os.cpu_count() or 1) + 4)
 
-        if extraction is None:
-            extraction = extract_from_file(file_path, path_str)
-            if cache:
-                cache.put(file_path, extraction)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(_extract_single_file, fp, rp, cache): (fp, rp) for fp, rp in work_items
+        }
+        for future in as_completed(futures):
+            file_path, path_str = futures[future]
+            result_path, extraction = future.result()
+            extractions.append((result_path, extraction))
 
+            if cache and cache.get(file_path) is None:
+                cache_misses.append((file_path, path_str, extraction))
+
+    if cache:
+        for file_path, _path_str, extraction in cache_misses:
+            cache.put(file_path, extraction)
+
+    for path_str, extraction in extractions:
         for func in extraction.functions:
             key = f"{path_str}:{func.qualified_name}"
             model.functions[key] = func
@@ -700,6 +797,7 @@ def extract_from_directory(
         model.return_types.update(extraction.return_types)
         model.detected_frameworks.update(extraction.detected_frameworks)
 
+    for file_path, _path_str in work_items:
         if custom_detectors.entrypoint_detectors or custom_detectors.global_handler_detectors:
             try:
                 source = file_path.read_text()
@@ -714,5 +812,7 @@ def extract_from_directory(
 
     if cache:
         cache.close()
+
+    _inject_drf_dispatch_calls(model)
 
     return model

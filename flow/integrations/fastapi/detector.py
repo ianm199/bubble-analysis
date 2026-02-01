@@ -63,13 +63,49 @@ class FastAPIRouteVisitor(cst.CSTVisitor):
 
 
 class FastAPIExceptionHandlerVisitor(cst.CSTVisitor):
-    """Detects FastAPI exception handlers (app.add_exception_handler calls)."""
+    """Detects FastAPI exception handlers.
+
+    Detects both patterns:
+    - app.add_exception_handler(ExceptionType, handler_func)
+    - @app.exception_handler(ExceptionType) decorator
+    """
 
     METADATA_DEPENDENCIES = (PositionProvider,)
 
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self.handlers: list[GlobalHandler] = []
+
+    def visit_FunctionDef(self, node: cst.FunctionDef) -> bool:
+        for decorator in node.decorators:
+            handler_info = self._parse_exception_handler_decorator(decorator)
+            if handler_info:
+                pos = self.get_metadata(PositionProvider, node)
+                self.handlers.append(
+                    GlobalHandler(
+                        file=self.file_path,
+                        line=pos.start.line,
+                        function=node.name.value,
+                        handled_type=handler_info,
+                    )
+                )
+        return True
+
+    def _parse_exception_handler_decorator(self, decorator: cst.Decorator) -> str | None:
+        if not isinstance(decorator.decorator, cst.Call):
+            return None
+
+        call = decorator.decorator
+        if not isinstance(call.func, cst.Attribute):
+            return None
+
+        if call.func.attr.value != "exception_handler":
+            return None
+
+        if not call.args:
+            return None
+
+        return self._get_name_from_expr(call.args[0].value)
 
     def visit_Call(self, node: cst.Call) -> bool:
         if not isinstance(node.func, cst.Attribute):

@@ -49,6 +49,18 @@ def resolution_model() -> ProgramModel:
 
 
 @pytest.fixture
+def flask_appbuilder_model() -> ProgramModel:
+    """Pre-built model for flask_appbuilder_app fixture."""
+    return extract_from_directory(FIXTURES / "flask_appbuilder_app", use_cache=False)
+
+
+@pytest.fixture
+def generic_handler_model() -> ProgramModel:
+    """Pre-built model for generic_handler_app fixture."""
+    return extract_from_directory(FIXTURES / "generic_handler_app", use_cache=False)
+
+
+@pytest.fixture
 def temp_project():
     """Create a temporary project directory."""
     with tempfile.TemporaryDirectory() as tmpdir:

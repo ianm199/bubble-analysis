@@ -26,6 +26,9 @@ class Entrypoint:
     metadata: dict[str, str] = field(default_factory=dict)
 
 
+GENERIC_EXCEPTION_TYPES = frozenset({"Exception", "BaseException"})
+
+
 @dataclass
 class GlobalHandler:
     """A global exception handler (e.g., Flask @errorhandler)."""
@@ -34,6 +37,12 @@ class GlobalHandler:
     line: int
     function: str
     handled_type: str
+
+    @property
+    def is_generic(self) -> bool:
+        """Check if this handler catches a generic exception type."""
+        simple_type = self.handled_type.split(".")[-1]
+        return simple_type in GENERIC_EXCEPTION_TYPES
 
 
 class EntrypointDetector(Protocol):

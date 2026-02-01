@@ -25,6 +25,8 @@ from flow.models import (
     compute_confidence,
 )
 
+_propagation_cache: dict[tuple[int, ResolutionMode, int | None], PropagationResult] = {}
+
 
 @dataclass(frozen=True)
 class PropagatedRaise:
@@ -41,6 +43,7 @@ class ExceptionFlow:
 
     caught_locally: dict[str, list[RaiseSite]] = field(default_factory=dict)
     caught_by_global: dict[str, list[RaiseSite]] = field(default_factory=dict)
+    caught_by_generic: dict[str, list[RaiseSite]] = field(default_factory=dict)
     uncaught: dict[str, list[RaiseSite]] = field(default_factory=dict)
     framework_handled: dict[str, list[tuple[RaiseSite, str]]] = field(default_factory=dict)
     evidence: dict[str, list[ExceptionEvidence]] = field(default_factory=dict)
@@ -295,6 +298,10 @@ def propagate_exceptions(
     - default: Normal propagation with name fallback
     - aggressive: Include fuzzy matching (not yet implemented)
     """
+    cache_key = (id(model), resolution_mode, id(stub_library) if stub_library else None)
+
+    if cache_key in _propagation_cache:
+        return _propagation_cache[cache_key]
 
     direct_raises = compute_direct_raises(model)
     catches_by_function = compute_catches_by_function(model)
@@ -448,12 +455,24 @@ def propagate_exceptions(
         if not changed:
             break
 
-    return PropagationResult(
+    result = PropagationResult(
         direct_raises=direct_raises,
         propagated_raises=propagated,
         catches_by_function=catches_by_function,
         propagated_with_evidence=propagated_evidence,
     )
+
+    _propagation_cache[cache_key] = result
+    return result
+
+
+def clear_propagation_cache() -> None:
+    """Clear the propagation cache.
+
+    Call this when memory management is needed or in tests to ensure
+    fresh propagation results.
+    """
+    _propagation_cache.clear()
 
 
 def compute_reachable_functions(

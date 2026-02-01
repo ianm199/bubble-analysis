@@ -46,6 +46,13 @@ def audit(
                         ]
                         for exc_type, raises_list in issue.uncaught.items()
                     },
+                    "caught_by_generic": {
+                        exc_type: [
+                            {"file": r.file, "line": r.line, "function": r.function}
+                            for r in raises_list
+                        ]
+                        for exc_type, raises_list in issue.caught_by_generic.items()
+                    },
                 }
                 for issue in result.issues
             ],
@@ -63,7 +70,7 @@ def audit(
 
     if result.issues:
         console.print(
-            f"[red bold]{len(result.issues)} entrypoints have uncaught exceptions:[/red bold]\n"
+            f"[red bold]{len(result.issues)} entrypoints have exception handling issues:[/red bold]\n"
         )
 
         for issue in result.issues:
@@ -77,16 +84,31 @@ def audit(
                 label = f"[magenta]{rel}[/magenta]:[bold]{ep.function}[/bold]"
 
             console.print(f"  {label}")
+
             for exc_type, raise_sites in issue.uncaught.items():
                 exc_simple = exc_type.split(".")[-1]
                 for rs in raise_sites[:2]:
                     rel = _rel_path(rs.file, directory)
-                    console.print(f"    {exc_simple} [dim]({rel}:{rs.line})[/dim]")
+                    console.print(f"    [red]{exc_simple}[/red] [dim]({rel}:{rs.line})[/dim]")
                 if len(raise_sites) > 2:
                     console.print(f"    [dim]...and {len(raise_sites) - 2} more[/dim]")
+
+            for exc_type, raise_sites in issue.caught_by_generic.items():
+                exc_simple = exc_type.split(".")[-1]
+                for rs in raise_sites[:2]:
+                    rel = _rel_path(rs.file, directory)
+                    console.print(
+                        f"    [yellow]{exc_simple}[/yellow] [dim]({rel}:{rs.line}) "
+                        f"- only caught by generic handler[/dim]"
+                    )
+                if len(raise_sites) > 2:
+                    console.print(f"    [dim]...and {len(raise_sites) - 2} more[/dim]")
+
             console.print()
     else:
-        console.print("[green bold]All entrypoints have exception handlers[/green bold]\n")
+        console.print(
+            "[green bold]All entrypoints have specific exception handlers[/green bold]\n"
+        )
 
     if result.clean_count > 0:
         console.print(

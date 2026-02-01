@@ -62,3 +62,4 @@ class ResolutionKind(str, Enum):
     STUB = "stub"
     UNRESOLVED = "unresolved"
     FASTAPI_DEPENDS = "fastapi_depends"
+    IMPLICIT_DISPATCH = "implicit_dispatch"
