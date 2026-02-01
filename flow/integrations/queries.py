@@ -138,8 +138,14 @@ def audit_integration(
     integration: Integration,
     entrypoints: list[Entrypoint],
     global_handlers: list[GlobalHandler],
+    skip_evidence: bool = True,
 ) -> AuditResult:
-    """Audit entrypoints for a specific integration."""
+    """Audit entrypoints for a specific integration.
+
+    Args:
+        skip_evidence: Skip building evidence paths for faster auditing.
+                       Set to False if you need path details.
+    """
     if not entrypoints:
         return AuditResult(
             integration_name=integration.name,
@@ -148,7 +154,7 @@ def audit_integration(
             clean_count=0,
         )
 
-    propagation = propagate_exceptions(model)
+    propagation = propagate_exceptions(model, skip_evidence=skip_evidence)
     reraise_patterns = {"Unknown", "e", "ex", "err", "exc", "error", "exception"}
 
     forward_graph = build_forward_call_graph(model)

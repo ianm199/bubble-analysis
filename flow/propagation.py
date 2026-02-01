@@ -25,7 +25,7 @@ from flow.models import (
     compute_confidence,
 )
 
-_propagation_cache: dict[tuple[int, ResolutionMode, int | None], PropagationResult] = {}
+_propagation_cache: dict[tuple[int, ResolutionMode, int | None, bool], PropagationResult] = {}
 
 
 @dataclass(frozen=True)
@@ -313,12 +313,17 @@ def propagate_exceptions(
     max_iterations: int = 100,
     resolution_mode: ResolutionMode = ResolutionMode.DEFAULT,
     stub_library: StubLibrary | None = None,
+    skip_evidence: bool = False,
 ) -> PropagationResult:
     """
     Propagate exceptions through the call graph.
 
     For each function, compute the set of exceptions that can escape from it,
     taking into account what it catches.
+
+    Args:
+        skip_evidence: If True, skip building evidence paths for faster propagation.
+                       Use for audit commands where only exception types matter.
 
     Resolution modes:
     - strict: Only follow resolved calls (no name_fallback or polymorphic)
@@ -327,7 +332,12 @@ def propagate_exceptions(
     """
     from flow import timing
 
-    cache_key = (id(model), resolution_mode, id(stub_library) if stub_library else None)
+    cache_key = (
+        id(model),
+        resolution_mode,
+        id(stub_library) if stub_library else None,
+        skip_evidence,
+    )
 
     if cache_key in _propagation_cache:
         return _propagation_cache[cache_key]
@@ -336,13 +346,15 @@ def propagate_exceptions(
         direct_raises = compute_direct_raises(model)
         catches_by_function = compute_catches_by_function(model)
         forward_graph = build_forward_call_graph(model)
-        call_site_lookup = _build_call_site_lookup(model)
+        call_site_lookup = _build_call_site_lookup(model) if not skip_evidence else {}
 
     propagated: dict[str, set[str]] = {}
     propagated_evidence: dict[str, dict[tuple[str, str, int], PropagatedRaise]] = {}
 
     for func, raises in direct_raises.items():
         propagated[func] = raises.copy()
+        if skip_evidence:
+            continue
         propagated_evidence[func] = {}
         for exc_type in raises:
             for rs in model.raise_sites:
@@ -383,11 +395,11 @@ def propagate_exceptions(
             for caller, callees in forward_graph.items():
                 if caller not in propagated:
                     propagated[caller] = set()
-                if caller not in propagated_evidence:
+                if not skip_evidence and caller not in propagated_evidence:
                     propagated_evidence[caller] = {}
 
                 for callee in callees:
-                    call_sites = call_site_lookup.get((caller, callee), [])
+                    call_sites = call_site_lookup.get((caller, callee), []) if not skip_evidence else []
                     call_site = call_sites[0] if call_sites else None
                     expanded_callees = expand_polymorphic_call(
                         callee, model.exception_hierarchy, method_to_qualified
@@ -398,7 +410,7 @@ def propagate_exceptions(
                         used_name_fallback = False
                         fallback_match_count = 1
                         callee_exceptions = propagated.get(expanded_callee, set())
-                        callee_evidence = propagated_evidence.get(expanded_callee, {})
+                        callee_evidence = propagated_evidence.get(expanded_callee, {}) if not skip_evidence else {}
 
                         if not callee_exceptions:
                             callee_simple = (
@@ -480,7 +492,7 @@ def propagate_exceptions(
                                 if caller not in name_to_qualified[caller_fallback_key]:
                                     name_to_qualified[caller_fallback_key].append(caller)
 
-                            if not is_caught:
+                            if not is_caught and not skip_evidence:
                                 for key, prop_raise in callee_evidence.items():
                                     if key[0] != exc_type:
                                         continue
