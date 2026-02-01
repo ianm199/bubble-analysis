@@ -89,14 +89,14 @@ The key insight: this is a fixpoint computation. If function A raises `ValueErro
 
 We ran the tool on four open source projects:
 
-| Project | Files | Analysis Time | Endpoints | Real Issues* |
-|---------|-------|---------------|-----------|--------------|
-| **httpbin** | 8 | 0.8s | 55 | 1 |
-| **Sentry** | 7,469 | 87s | 52 | 43 |
-| **Airflow** | 50,000 | 82s | 4 | 2 |
-| **Superset** | 1,129 | 27s | 251 | 133 |
+| Project | Framework | Files | Time | Endpoints | With Issues |
+|---------|-----------|-------|------|-----------|-------------|
+| **httpbin** | Flask | 8 | 0.8s | 55 | 1 (2%) |
+| **Sentry** | Django/DRF | 7,469 | 87s | 52 | 43 (83%)* |
+| **Airflow** | Flask | 50,000 | 82s | 4 | 2 (50%) |
+| **Superset** | Flask | 1,129 | 27s | 251 | 133 (53%) |
 
-*After filtering framework-handled exceptions (e.g., DRF's `APIException` subclasses)
+*Sentry uses Django REST Framework which auto-handles `APIException` subclasses. We configured the tool to filter these out (see config below), reducing false positives from 258 to 0.
 
 ### Case Study: Sentry
 
