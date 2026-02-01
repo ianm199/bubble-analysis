@@ -10,7 +10,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from flow import formatters, queries
+from flow import formatters, queries, timing
 from flow.enums import OutputFormat, ResolutionMode
 from flow.extractor import extract_from_directory
 from flow.models import ProgramModel
@@ -62,6 +62,21 @@ app = typer.Typer(
 )
 
 console = Console()
+
+
+@app.callback()
+def main_callback(
+    enable_timing: Annotated[
+        bool,
+        typer.Option(
+            "--timing",
+            help="Show timing breakdown for performance analysis",
+        ),
+    ] = False,
+) -> None:
+    """Flow: Exception flow analysis for Python codebases."""
+    if enable_timing:
+        timing.enable(console)
 
 
 def _register_integration_subcommands() -> None:

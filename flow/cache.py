@@ -39,7 +39,7 @@ class FileCache:
         self.db = self._open_db()
 
     def _open_db(self) -> sqlite3.Connection:
-        db = sqlite3.connect(self.db_path)
+        db = sqlite3.connect(self.db_path, check_same_thread=False)
         db.execute("PRAGMA journal_mode=WAL")
         db.execute("PRAGMA synchronous=NORMAL")
 

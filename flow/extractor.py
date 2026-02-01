@@ -2,7 +2,7 @@
 
 import os
 from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -644,22 +644,17 @@ DRF_ACTION_METHODS = {"list", "create", "retrieve", "update", "partial_update", 
 DRF_DISPATCH_METHODS = DRF_HTTP_METHODS | DRF_ACTION_METHODS
 
 
-def _extract_single_file(
-    file_path: Path,
+def _extract_single_file_for_process(
+    file_path_str: str,
     relative_path: str,
-    cache: "FileCache | None",
 ) -> tuple[str, FileExtraction]:
-    """Extract from a single file, using cache if available.
+    """Extract from a single file without cache access.
 
-    This function is designed to be called from a ThreadPoolExecutor.
+    This function is designed to be called from a ProcessPoolExecutor.
+    Cache lookups are done in the main process before dispatching.
     """
-    extraction = None
-    if cache:
-        extraction = cache.get(file_path)
-
-    if extraction is None:
-        extraction = extract_from_file(file_path, relative_path)
-
+    file_path = Path(file_path_str)
+    extraction = extract_from_file(file_path, relative_path)
     return (relative_path, extraction)
 
 
@@ -723,6 +718,7 @@ def extract_from_directory(
     use_cache: bool = True,
 ) -> ProgramModel:
     """Extract structural information from all Python files in a directory."""
+    from flow import timing
     from flow.cache import FileCache
 
     if exclude_dirs is None:
@@ -747,7 +743,8 @@ def extract_from_directory(
     if use_cache:
         cache = FileCache(directory / ".flow")
 
-    python_files = list(directory.rglob("*.py"))
+    with timing.timed("file_discovery"):
+        python_files = list(directory.rglob("*.py"))
 
     work_items: list[tuple[Path, str]] = []
     for file_path in python_files:
@@ -758,44 +755,58 @@ def extract_from_directory(
 
     extractions: list[tuple[str, FileExtraction]] = []
     cache_misses: list[tuple[Path, str, FileExtraction]] = []
+    work_to_process: list[tuple[str, str]] = []
+
+    if cache:
+        for file_path, relative_path in work_items:
+            cached = cache.get(file_path)
+            if cached is not None:
+                extractions.append((relative_path, cached))
+            else:
+                work_to_process.append((str(file_path), relative_path))
+    else:
+        work_to_process = [(str(fp), rp) for fp, rp in work_items]
 
     max_workers = min(32, (os.cpu_count() or 1) + 4)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(_extract_single_file, fp, rp, cache): (fp, rp) for fp, rp in work_items
-        }
-        for future in as_completed(futures):
-            file_path, path_str = futures[future]
-            result_path, extraction = future.result()
-            extractions.append((result_path, extraction))
+    with timing.timed("parallel_extraction"):
+        if work_to_process:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(_extract_single_file_for_process, fp_str, rp): (fp_str, rp)
+                    for fp_str, rp in work_to_process
+                }
+                for future in as_completed(futures):
+                    fp_str, path_str = futures[future]
+                    result_path, extraction = future.result()
+                    extractions.append((result_path, extraction))
+                    cache_misses.append((Path(fp_str), path_str, extraction))
 
-            if cache and cache.get(file_path) is None:
-                cache_misses.append((file_path, path_str, extraction))
+    with timing.timed("cache_writes"):
+        if cache:
+            for file_path, _path_str, extraction in cache_misses:
+                cache.put(file_path, extraction)
 
-    if cache:
-        for file_path, _path_str, extraction in cache_misses:
-            cache.put(file_path, extraction)
+    with timing.timed("model_aggregation"):
+        for path_str, extraction in extractions:
+            for func in extraction.functions:
+                key = f"{path_str}:{func.qualified_name}"
+                model.functions[key] = func
 
-    for path_str, extraction in extractions:
-        for func in extraction.functions:
-            key = f"{path_str}:{func.qualified_name}"
-            model.functions[key] = func
+            for cls in extraction.classes:
+                key = f"{path_str}:{cls.qualified_name}"
+                model.classes[key] = cls
+                model.exception_hierarchy.add_class(cls)
 
-        for cls in extraction.classes:
-            key = f"{path_str}:{cls.qualified_name}"
-            model.classes[key] = cls
-            model.exception_hierarchy.add_class(cls)
-
-        model.raise_sites.extend(extraction.raise_sites)
-        model.catch_sites.extend(extraction.catch_sites)
-        model.call_sites.extend(extraction.call_sites)
-        model.imports.extend(extraction.imports)
-        model.entrypoints.extend(extraction.entrypoints)
-        model.global_handlers.extend(extraction.global_handlers)
-        model.import_maps[path_str] = extraction.import_map
-        model.return_types.update(extraction.return_types)
-        model.detected_frameworks.update(extraction.detected_frameworks)
+            model.raise_sites.extend(extraction.raise_sites)
+            model.catch_sites.extend(extraction.catch_sites)
+            model.call_sites.extend(extraction.call_sites)
+            model.imports.extend(extraction.imports)
+            model.entrypoints.extend(extraction.entrypoints)
+            model.global_handlers.extend(extraction.global_handlers)
+            model.import_maps[path_str] = extraction.import_map
+            model.return_types.update(extraction.return_types)
+            model.detected_frameworks.update(extraction.detected_frameworks)
 
     for file_path, _path_str in work_items:
         if custom_detectors.entrypoint_detectors or custom_detectors.global_handler_detectors:

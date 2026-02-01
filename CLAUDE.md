@@ -162,7 +162,8 @@ flow/
 ├── config.py       # Configuration loading (.flow/config.yaml)
 ├── stubs.py        # Exception stub loading for external libraries
 ├── stubs/          # Built-in YAML stubs (requests, sqlalchemy, etc.)
-├── cache.py        # SQLite-based caching
+├── cache.py        # SQLite-based caching for file extraction
+├── timing.py       # Performance instrumentation (--timing flag)
 ├── cli.py          # Core CLI + integration subcommand registration
 │
 └── integrations/   # Framework-specific code (Flask, FastAPI, CLI scripts)
@@ -248,6 +249,7 @@ The visitor maintains stacks for current class/function context.
 Exception flow computation using fixpoint iteration:
 - `build_forward_call_graph()`: Map from caller to callees
 - `build_reverse_call_graph()`: Map from callee to callers (qualified + name-based)
+- `build_name_to_qualified()`: Map from simple names to qualified names
 - `compute_direct_raises()`: Exceptions raised directly in each function
 - `propagate_exceptions()`: Fixpoint iteration to propagate through call graph (accepts `resolution_mode` and `stub_library` params)
 - `compute_exception_flow()`: Categorize exceptions as caught locally, or uncaught (framework-specific categorization is in integrations/)
@@ -259,6 +261,65 @@ Trust features:
 - Stub integration: External library exceptions injected via `StubLibrary`
 
 Framework-specific exception handling (HTTPException → HTTP response) is now in `integrations/queries.py`.
+
+## Graphs and Caching Architecture
+
+### Call Graphs (built from `model.call_sites`)
+
+| Graph | Direction | Key → Value | Used For |
+|-------|-----------|-------------|----------|
+| `forward_graph` | caller → callees | `"file.py::Foo.bar"` → `{"file.py::Baz.qux", ...}` | Reachability ("what does this call?") |
+| `qualified_graph` | callee → callers | `"file.py::Foo.bar"` → `{"file.py::main", ...}` | Reverse lookup ("who calls this?") |
+| `name_graph` | simple name → callers | `"bar"` → `{"file.py::main", ...}` | Fallback when qualified lookup fails |
+
+### Lookup Maps
+
+| Map | Key → Value | Purpose |
+|-----|-------------|---------|
+| `name_to_qualified` | `"process"` → `["svc.py::ServiceA.process", "svc.py::ServiceB.process"]` | Resolve bare names to qualified |
+| `import_maps[file]` | `"requests"` → `"requests"` | Resolve imports for call resolution |
+| `return_types` | `"file.py::factory"` → `"ServiceA"` | Constructor tracking |
+
+### Caching Layers
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SQLite File Cache                        │
+│  Key: file path + mtime + size                              │
+│  Value: FileExtraction (functions, calls, raises, etc.)     │
+│  Lifetime: Persistent across runs                           │
+│  Location: .flow/cache.sqlite                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  Propagation Cache                          │
+│  Key: (model_id, resolution_mode, stub_library_id)          │
+│  Value: PropagationResult (propagated_raises, evidence)     │
+│  Lifetime: Single process (in-memory dict)                  │
+│  Purpose: Avoid recomputing for multiple queries            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│               Hierarchy Subclass Cache                      │
+│  Key: (child, parent) tuple                                 │
+│  Value: bool                                                │
+│  Lifetime: Per ClassHierarchy instance                      │
+│  Purpose: Memoize BFS traversal                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Performance Considerations
+
+**Extraction** is the bottleneck on cold runs (no cache). Uses `ProcessPoolExecutor` for true multicore parallelism since libcst parsing is CPU-bound.
+
+**Graphs should be built once and reused.** Functions like `compute_reachable_functions()` accept pre-built `forward_graph` and `name_to_qualified` parameters. When calling in a loop (e.g., auditing N entrypoints), build these once outside the loop.
+
+**Timing instrumentation** available via `--timing` flag:
+```bash
+flow --timing flask audit
+```
+
+See `docs/PERFORMANCE.md` for detailed benchmarks and optimization patterns.
 
 ### results.py
 

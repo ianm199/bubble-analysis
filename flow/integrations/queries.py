@@ -15,6 +15,8 @@ from flow.models import ProgramModel, RaiseSite
 from flow.propagation import (
     ExceptionFlow,
     PropagationResult,
+    build_forward_call_graph,
+    build_name_to_qualified,
     build_reverse_call_graph,
     compute_reachable_functions,
     propagate_exceptions,
@@ -27,6 +29,8 @@ def _compute_exception_flow_for_integration(
     propagation: PropagationResult,
     integration: Integration,
     global_handlers: list[GlobalHandler],
+    forward_graph: dict[str, set[str]] | None = None,
+    name_to_qualified: dict[str, list[str]] | None = None,
 ) -> ExceptionFlow:
     """Compute exception flow for a function with integration-specific handling.
 
@@ -35,6 +39,9 @@ def _compute_exception_flow_for_integration(
     - caught_by_global: By global handler
     - framework_handled: Converted to HTTP response
     - uncaught: Will escape
+
+    For better performance when calling repeatedly, pre-compute forward_graph and
+    name_to_qualified using build_forward_call_graph() and build_name_to_qualified().
     """
     from flow.models import ExceptionEvidence, compute_confidence
 
@@ -52,7 +59,9 @@ def _compute_exception_flow_for_integration(
     if func_key is None:
         return flow
 
-    reachable = compute_reachable_functions(func_key, model, propagation)
+    reachable = compute_reachable_functions(
+        func_key, model, propagation, forward_graph, name_to_qualified
+    )
 
     escaping_exceptions = propagation.propagated_raises.get(func_key, set())
     func_evidence = propagation.propagated_with_evidence.get(func_key, {})
@@ -142,16 +151,27 @@ def audit_integration(
     propagation = propagate_exceptions(model)
     reraise_patterns = {"Unknown", "e", "ex", "err", "exc", "error", "exception"}
 
+    forward_graph = build_forward_call_graph(model)
+    name_to_qualified = build_name_to_qualified(propagation)
+
     issues: list[AuditIssue] = []
     clean_count = 0
 
     for entrypoint in entrypoints:
         flow = _compute_exception_flow_for_integration(
-            entrypoint.function, model, propagation, integration, global_handlers
+            entrypoint.function,
+            model,
+            propagation,
+            integration,
+            global_handlers,
+            forward_graph,
+            name_to_qualified,
         )
 
         real_uncaught = {k: v for k, v in flow.uncaught.items() if k not in reraise_patterns}
-        real_generic = {k: v for k, v in flow.caught_by_generic.items() if k not in reraise_patterns}
+        real_generic = {
+            k: v for k, v in flow.caught_by_generic.items() if k not in reraise_patterns
+        }
 
         if real_uncaught or real_generic:
             issues.append(

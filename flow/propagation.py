@@ -76,6 +76,17 @@ def build_forward_call_graph(model: ProgramModel) -> dict[str, set[str]]:
     return graph
 
 
+def build_name_to_qualified(propagation: "PropagationResult") -> dict[str, list[str]]:
+    """Build a map from simple function names to their qualified names."""
+    name_to_qualified: dict[str, list[str]] = {}
+    for key in propagation.propagated_raises:
+        simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+        if simple not in name_to_qualified:
+            name_to_qualified[simple] = []
+        name_to_qualified[simple].append(key)
+    return name_to_qualified
+
+
 def build_reverse_call_graph(
     model: ProgramModel,
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
@@ -298,15 +309,18 @@ def propagate_exceptions(
     - default: Normal propagation with name fallback
     - aggressive: Include fuzzy matching (not yet implemented)
     """
+    from flow import timing
+
     cache_key = (id(model), resolution_mode, id(stub_library) if stub_library else None)
 
     if cache_key in _propagation_cache:
         return _propagation_cache[cache_key]
 
-    direct_raises = compute_direct_raises(model)
-    catches_by_function = compute_catches_by_function(model)
-    forward_graph = build_forward_call_graph(model)
-    call_site_lookup = _build_call_site_lookup(model)
+    with timing.timed("propagation_setup"):
+        direct_raises = compute_direct_raises(model)
+        catches_by_function = compute_catches_by_function(model)
+        forward_graph = build_forward_call_graph(model)
+        call_site_lookup = _build_call_site_lookup(model)
 
     propagated: dict[str, set[str]] = {}
     propagated_evidence: dict[str, dict[tuple[str, str, int], PropagatedRaise]] = {}
@@ -340,120 +354,132 @@ def propagate_exceptions(
                 method_to_qualified[method_name] = []
             method_to_qualified[method_name].append(qualified_key)
 
-    for _ in range(max_iterations):
-        changed = False
+    with timing.timed("propagation_fixpoint"):
+        for _ in range(max_iterations):
+            changed = False
 
-        for caller, callees in forward_graph.items():
-            if caller not in propagated:
-                propagated[caller] = set()
-            if caller not in propagated_evidence:
-                propagated_evidence[caller] = {}
+            for caller, callees in forward_graph.items():
+                if caller not in propagated:
+                    propagated[caller] = set()
+                if caller not in propagated_evidence:
+                    propagated_evidence[caller] = {}
 
-            for callee in callees:
-                call_sites = call_site_lookup.get((caller, callee), [])
-                call_site = call_sites[0] if call_sites else None
-                expanded_callees = expand_polymorphic_call(
-                    callee, model.exception_hierarchy, method_to_qualified
-                )
-                is_polymorphic = len(expanded_callees) > 1
+                for callee in callees:
+                    call_sites = call_site_lookup.get((caller, callee), [])
+                    call_site = call_sites[0] if call_sites else None
+                    expanded_callees = expand_polymorphic_call(
+                        callee, model.exception_hierarchy, method_to_qualified
+                    )
+                    is_polymorphic = len(expanded_callees) > 1
 
-                for expanded_callee in expanded_callees:
-                    used_name_fallback = False
-                    fallback_match_count = 1
-                    callee_exceptions = propagated.get(expanded_callee, set())
-                    callee_evidence = propagated_evidence.get(expanded_callee, {})
+                    for expanded_callee in expanded_callees:
+                        used_name_fallback = False
+                        fallback_match_count = 1
+                        callee_exceptions = propagated.get(expanded_callee, set())
+                        callee_evidence = propagated_evidence.get(expanded_callee, {})
 
-                    if not callee_exceptions:
-                        callee_simple = (
-                            expanded_callee.split("::")[-1].split(".")[-1]
-                            if "::" in expanded_callee
-                            else expanded_callee.split(".")[-1]
-                        )
-                        is_method = call_site.is_method_call if call_site else False
-                        caller_file = caller.split("::")[0] if "::" in caller else caller
-                        import_map = model.import_maps.get(caller_file, {})
-
-                        matched_keys, _ = _scoped_fallback_lookup(
-                            callee_simple, is_method, caller_file, import_map, name_to_qualified
-                        )
-                        fallback_match_count = len(matched_keys) if matched_keys else 1
-
-                        for qualified_key in matched_keys:
-                            callee_exceptions = callee_exceptions | propagated.get(
-                                qualified_key, set()
+                        if not callee_exceptions:
+                            callee_simple = (
+                                expanded_callee.split("::")[-1].split(".")[-1]
+                                if "::" in expanded_callee
+                                else expanded_callee.split(".")[-1]
                             )
-                            callee_evidence = {
-                                **callee_evidence,
-                                **propagated_evidence.get(qualified_key, {}),
-                            }
-                            if callee_exceptions:
-                                used_name_fallback = True
+                            is_method = call_site.is_method_call if call_site else False
+                            caller_file = caller.split("::")[0] if "::" in caller else caller
+                            import_map = model.import_maps.get(caller_file, {})
 
-                    if stub_library and not callee_exceptions:
-                        callee_parts = expanded_callee.split(".")
-                        if len(callee_parts) >= 2:
-                            module = callee_parts[0]
-                            func = callee_parts[-1]
-                            stub_exceptions = stub_library.get_raises(module, func)
-                            if stub_exceptions:
-                                callee_exceptions = set(stub_exceptions)
-
-                    if resolution_mode == ResolutionMode.STRICT and (
-                        used_name_fallback or is_polymorphic
-                    ):
-                        continue
-
-                    for exc_type in callee_exceptions:
-                        catches = catches_by_function.get(caller, [])
-                        is_caught = False
-
-                        for catch_site in catches:
-                            if exception_is_caught(exc_type, catch_site, model.exception_hierarchy):
-                                if not catch_site.has_reraise:
-                                    is_caught = True
-                                    break
-
-                        if not is_caught and exc_type not in propagated[caller]:
-                            propagated[caller].add(exc_type)
-                            changed = True
-
-                            caller_simple = (
-                                caller.split("::")[-1].split(".")[-1] if "::" in caller else caller
+                            matched_keys, _ = _scoped_fallback_lookup(
+                                callee_simple,
+                                is_method,
+                                caller_file,
+                                import_map,
+                                name_to_qualified,
                             )
-                            caller_is_method = (
-                                "." in caller.split("::")[-1] if "::" in caller else False
-                            )
-                            caller_fallback_key: FallbackKey = (caller_simple, caller_is_method)
-                            if caller_fallback_key not in name_to_qualified:
-                                name_to_qualified[caller_fallback_key] = []
-                            if caller not in name_to_qualified[caller_fallback_key]:
-                                name_to_qualified[caller_fallback_key].append(caller)
+                            fallback_match_count = len(matched_keys) if matched_keys else 1
 
-                        if not is_caught:
-                            for key, prop_raise in callee_evidence.items():
-                                if key[0] != exc_type:
-                                    continue
-                                if key in propagated_evidence[caller]:
-                                    continue
-                                if call_site is None:
-                                    continue
-                                edge = _create_resolution_edge(
-                                    call_site,
-                                    caller,
-                                    expanded_callee,
-                                    used_name_fallback,
-                                    is_polymorphic,
-                                    fallback_match_count,
+                            for qualified_key in matched_keys:
+                                callee_exceptions = callee_exceptions | propagated.get(
+                                    qualified_key, set()
                                 )
-                                new_path = (edge,) + prop_raise.path
-                                propagated_evidence[caller][key] = PropagatedRaise(
-                                    exception_type=exc_type,
-                                    raise_site=prop_raise.raise_site,
-                                    path=new_path,
-                                )
+                                callee_evidence = {
+                                    **callee_evidence,
+                                    **propagated_evidence.get(qualified_key, {}),
+                                }
+                                if callee_exceptions:
+                                    used_name_fallback = True
 
-        if not changed:
-            break
+                        if stub_library and not callee_exceptions:
+                            callee_parts = expanded_callee.split(".")
+                            if len(callee_parts) >= 2:
+                                module = callee_parts[0]
+                                func = callee_parts[-1]
+                                stub_exceptions = stub_library.get_raises(module, func)
+                                if stub_exceptions:
+                                    callee_exceptions = set(stub_exceptions)
+
+                        if resolution_mode == ResolutionMode.STRICT and (
+                            used_name_fallback or is_polymorphic
+                        ):
+                            continue
+
+                        for exc_type in callee_exceptions:
+                            catches = catches_by_function.get(caller, [])
+                            is_caught = False
+
+                            for catch_site in catches:
+                                if exception_is_caught(
+                                    exc_type, catch_site, model.exception_hierarchy
+                                ):
+                                    if not catch_site.has_reraise:
+                                        is_caught = True
+                                        break
+
+                            if not is_caught and exc_type not in propagated[caller]:
+                                propagated[caller].add(exc_type)
+                                changed = True
+
+                                caller_simple = (
+                                    caller.split("::")[-1].split(".")[-1]
+                                    if "::" in caller
+                                    else caller
+                                )
+                                caller_is_method = (
+                                    "." in caller.split("::")[-1] if "::" in caller else False
+                                )
+                                caller_fallback_key: FallbackKey = (
+                                    caller_simple,
+                                    caller_is_method,
+                                )
+                                if caller_fallback_key not in name_to_qualified:
+                                    name_to_qualified[caller_fallback_key] = []
+                                if caller not in name_to_qualified[caller_fallback_key]:
+                                    name_to_qualified[caller_fallback_key].append(caller)
+
+                            if not is_caught:
+                                for key, prop_raise in callee_evidence.items():
+                                    if key[0] != exc_type:
+                                        continue
+                                    if key in propagated_evidence[caller]:
+                                        continue
+                                    if call_site is None:
+                                        continue
+                                    edge = _create_resolution_edge(
+                                        call_site,
+                                        caller,
+                                        expanded_callee,
+                                        used_name_fallback,
+                                        is_polymorphic,
+                                        fallback_match_count,
+                                    )
+                                    new_path = (edge,) + prop_raise.path
+                                    propagated_evidence[caller][key] = PropagatedRaise(
+                                        exception_type=exc_type,
+                                        raise_site=prop_raise.raise_site,
+                                        path=new_path,
+                                    )
+
+            if not changed:
+                break
 
     result = PropagationResult(
         direct_raises=direct_raises,
@@ -479,16 +505,31 @@ def compute_reachable_functions(
     start_func: str,
     model: ProgramModel,
     propagation: PropagationResult,
+    forward_graph: dict[str, set[str]] | None = None,
+    name_to_qualified: dict[str, list[str]] | None = None,
 ) -> set[str]:
-    """Compute all functions reachable from a starting function via the call graph."""
-    forward_graph = build_forward_call_graph(model)
+    """Compute all functions reachable from a starting function via the call graph.
 
-    name_to_qualified: dict[str, list[str]] = {}
-    for key in propagation.propagated_raises:
+    For better performance when calling repeatedly, pre-compute forward_graph and
+    name_to_qualified once and pass them in.
+    """
+    if forward_graph is None:
+        forward_graph = build_forward_call_graph(model)
+
+    if name_to_qualified is None:
+        name_to_qualified = {}
+        for key in propagation.propagated_raises:
+            simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+            if simple not in name_to_qualified:
+                name_to_qualified[simple] = []
+            name_to_qualified[simple].append(key)
+
+    simple_to_qualified_graph: dict[str, list[str]] = {}
+    for key in forward_graph:
         simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
-        if simple not in name_to_qualified:
-            name_to_qualified[simple] = []
-        name_to_qualified[simple].append(key)
+        if simple not in simple_to_qualified_graph:
+            simple_to_qualified_graph[simple] = []
+        simple_to_qualified_graph[simple].append(key)
 
     reachable: set[str] = set()
     worklist = [start_func]
@@ -506,19 +547,16 @@ def compute_reachable_functions(
 
         callees = forward_graph.get(current, set())
         if not callees:
-            for key in forward_graph:
-                key_simple = (
-                    key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
-                )
-                if key_simple == current_simple:
-                    callees = forward_graph[key]
+            for qualified_key in simple_to_qualified_graph.get(current_simple, []):
+                callees = forward_graph.get(qualified_key, set())
+                if callees:
                     break
 
         for callee in callees:
             expanded = expand_polymorphic_call(
                 callee,
                 model.exception_hierarchy,
-                {k: name_to_qualified.get(k, []) for k in name_to_qualified},
+                name_to_qualified,
             )
 
             for impl in expanded:

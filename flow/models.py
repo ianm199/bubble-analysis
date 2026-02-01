@@ -280,12 +280,20 @@ class ClassHierarchy:
 
     def is_subclass_of(self, child: str, parent: str) -> bool:
         """Check if child is a subclass of parent."""
+        import time
+
+        from flow import timing
+
         if child == parent:
             return True
 
         cache_key = (child, parent)
         if cache_key in self._subclass_cache:
+            if timing.is_enabled():
+                timing.record("hierarchy_cache_hit", 0)
             return self._subclass_cache[cache_key]
+
+        start = time.perf_counter()
 
         visited: set[str] = set()
         to_check = [child]
@@ -308,6 +316,10 @@ class ClassHierarchy:
             to_check.extend(p.split(".")[-1] for p in parents)
 
         self._subclass_cache[cache_key] = result
+
+        if timing.is_enabled():
+            timing.record("hierarchy_lookup", time.perf_counter() - start)
+
         return result
 
     def is_abstract_method(self, class_name: str, method_name: str) -> bool:

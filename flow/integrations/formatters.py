@@ -106,9 +106,7 @@ def audit(
 
             console.print()
     else:
-        console.print(
-            "[green bold]All entrypoints have specific exception handlers[/green bold]\n"
-        )
+        console.print("[green bold]All entrypoints have specific exception handlers[/green bold]\n")
 
     if result.clean_count > 0:
         console.print(
