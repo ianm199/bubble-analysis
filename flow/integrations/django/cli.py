@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from flow.config import load_config
 from flow.extractor import extract_from_directory
 from flow.integrations import formatters
 from flow.integrations.django import DjangoIntegration
@@ -56,9 +57,10 @@ def audit(
         flow django audit -d /path/to/project
     """
     directory = directory.resolve()
+    config = load_config(directory)
     model = _build_model(directory, use_cache=not no_cache)
     entrypoints, handlers = _get_django_entrypoints_and_handlers(model)
-    result = audit_integration(model, integration, entrypoints, handlers)
+    result = audit_integration(model, integration, entrypoints, handlers, config=config)
     formatters.audit(result, output_format, directory, console)
 
 

@@ -1,5 +1,6 @@
 """Configuration loading for flow analysis."""
 
+import fnmatch
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -15,6 +16,19 @@ class FlowConfig:
 
     resolution_mode: ResolutionMode = "default"
     exclude: list[str] = field(default_factory=list)
+    handled_base_classes: list[str] = field(default_factory=list)
+    async_boundaries: list[str] = field(default_factory=list)
+
+    def is_async_boundary(self, callee_name: str) -> bool:
+        """Check if a callee matches an async boundary pattern."""
+        for pattern in self.async_boundaries:
+            if fnmatch.fnmatch(callee_name, pattern):
+                return True
+            if "." in callee_name:
+                method_name = callee_name.split(".")[-1]
+                if fnmatch.fnmatch(method_name, pattern.lstrip("*.")):
+                    return True
+        return False
 
 
 def load_config(directory: Path) -> FlowConfig:
@@ -33,4 +47,6 @@ def load_config(directory: Path) -> FlowConfig:
     return FlowConfig(
         resolution_mode=mode,
         exclude=data.get("exclude", []),
+        handled_base_classes=data.get("handled_base_classes", []),
+        async_boundaries=data.get("async_boundaries", []),
     )

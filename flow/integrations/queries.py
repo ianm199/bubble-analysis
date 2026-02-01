@@ -3,6 +3,7 @@
 Shared audit/entrypoint logic that all integrations use.
 """
 
+from flow.config import FlowConfig
 from flow.integrations.base import Entrypoint, GlobalHandler, Integration
 from flow.integrations.models import (
     AuditIssue,
@@ -23,6 +24,24 @@ from flow.propagation import (
 )
 
 
+def _filter_async_boundaries(
+    forward_graph: dict[str, set[str]], config: FlowConfig
+) -> dict[str, set[str]]:
+    """Remove calls that match async boundary patterns from the call graph.
+
+    Async boundaries (like Celery's .apply_async() or .delay()) spawn background
+    tasks where exceptions don't propagate back to the caller.
+    """
+    filtered: dict[str, set[str]] = {}
+    for caller, callees in forward_graph.items():
+        filtered_callees = {
+            callee for callee in callees if not config.is_async_boundary(callee)
+        }
+        if filtered_callees:
+            filtered[caller] = filtered_callees
+    return filtered
+
+
 def _compute_exception_flow_for_integration(
     function_name: str,
     model: ProgramModel,
@@ -31,13 +50,14 @@ def _compute_exception_flow_for_integration(
     global_handlers: list[GlobalHandler],
     forward_graph: dict[str, set[str]] | None = None,
     name_to_qualified: dict[str, list[str]] | None = None,
+    config: FlowConfig | None = None,
 ) -> ExceptionFlow:
     """Compute exception flow for a function with integration-specific handling.
 
     Categorizes exceptions as:
     - caught_locally: By try/except in the function
     - caught_by_global: By global handler
-    - framework_handled: Converted to HTTP response
+    - framework_handled: Converted to HTTP response (or handled by handled_base_classes)
     - uncaught: Will escape
 
     For better performance when calling repeatedly, pre-compute forward_graph and
@@ -46,6 +66,7 @@ def _compute_exception_flow_for_integration(
     from flow.models import ExceptionEvidence, compute_confidence
 
     flow = ExceptionFlow()
+    handled_base_classes = config.handled_base_classes if config else []
 
     func_key = None
     for key in propagation.propagated_raises:
@@ -126,6 +147,26 @@ def _compute_exception_flow_for_integration(
                 flow.framework_handled[exc_type].append((rs, framework_response))
             continue
 
+        is_handled_by_config = False
+        for base_class in handled_base_classes:
+            base_simple = base_class.split(".")[-1]
+            if exc_simple == base_simple or exc_type == base_class:
+                is_handled_by_config = True
+                break
+            if model.exception_hierarchy.is_subclass_of(exc_simple, base_simple):
+                is_handled_by_config = True
+                break
+            if model.exception_hierarchy.is_subclass_of(exc_type, base_class):
+                is_handled_by_config = True
+                break
+
+        if is_handled_by_config:
+            if exc_type not in flow.framework_handled:
+                flow.framework_handled[exc_type] = []
+            for rs in raise_sites:
+                flow.framework_handled[exc_type].append((rs, "handled by config"))
+            continue
+
         if exc_type not in flow.uncaught:
             flow.uncaught[exc_type] = []
         flow.uncaught[exc_type].extend(raise_sites)
@@ -139,12 +180,14 @@ def audit_integration(
     entrypoints: list[Entrypoint],
     global_handlers: list[GlobalHandler],
     skip_evidence: bool = True,
+    config: FlowConfig | None = None,
 ) -> AuditResult:
     """Audit entrypoints for a specific integration.
 
     Args:
         skip_evidence: Skip building evidence paths for faster auditing.
                        Set to False if you need path details.
+        config: Optional FlowConfig with handled_base_classes and async_boundaries.
     """
     if not entrypoints:
         return AuditResult(
@@ -158,6 +201,8 @@ def audit_integration(
     reraise_patterns = {"Unknown", "e", "ex", "err", "exc", "error", "exception"}
 
     forward_graph = build_forward_call_graph(model)
+    if config and config.async_boundaries:
+        forward_graph = _filter_async_boundaries(forward_graph, config)
     name_to_qualified = build_name_to_qualified(propagation)
 
     issues: list[AuditIssue] = []
@@ -172,6 +217,7 @@ def audit_integration(
             global_handlers,
             forward_graph,
             name_to_qualified,
+            config,
         )
 
         real_uncaught = {k: v for k, v in flow.uncaught.items() if k not in reraise_patterns}
