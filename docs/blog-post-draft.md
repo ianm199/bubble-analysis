@@ -40,20 +40,38 @@ We ran the tool on three major open source projects:
 | **Airflow** | 50,000 | 1m 22s | 4 | 2 (50%) |
 | **Superset** | 1,129 | 27s | 251 | 133 (53%) |
 
-### Sentry: OAuth KeyError
+### Sentry: Slack Channel Lookup Timeout Crashes Alert Creation
 
 ```python
-# sentry/identity/oauth2.py:103
+# src/sentry/incidents/logic.py:1649
+# https://github.com/getsentry/sentry/blob/master/src/sentry/incidents/logic.py#L1649
+if channel_data.timed_out:
+    raise ChannelLookupTimeoutError(
+        "Could not find channel %s. We have timed out trying to look for it." % name
+    )
+```
+
+**What happens**: User creates an alert rule with Slack notification, but channel lookup times out.
+**What they see**: "Internal Server Error" — alert creation fails silently
+**What they should see**: "Slack channel lookup timed out. Please verify the channel name and try again."
+
+**Why it matters**: Alerting is core Sentry functionality. Users don't know if their alert was saved.
+
+### Sentry: OAuth Configuration KeyError
+
+```python
+# src/sentry/identity/oauth2.py:103
+# https://github.com/getsentry/sentry/blob/master/src/sentry/identity/oauth2.py#L103
 def _get_oauth_parameter(self, parameter_name):
-    if self.config.get(parameter_name):
-        return self.config.get(parameter_name)
-    # ... more lookups ...
+    # ... lookup logic ...
     raise KeyError(f'Unable to resolve OAuth parameter "{parameter_name}"')
 ```
 
-**What happens**: User clicks "Connect GitHub" with a misconfigured integration.
+**What happens**: Admin sets up self-hosted Sentry, user clicks "Connect GitHub" before OAuth is configured.
 **What they see**: "Internal Server Error"
 **What they should see**: "This integration is not properly configured. Contact your administrator."
+
+**Why it matters**: This is a common self-hosted setup issue with no helpful error message.
 
 ### Superset: ValueError in Validation
 
