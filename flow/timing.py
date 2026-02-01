@@ -68,6 +68,14 @@ def record(name: str, elapsed: float) -> None:
     _stats.counts[name] = _stats.counts.get(name, 0) + 1
 
 
+def record_count(name: str, count: int) -> None:
+    """Record a counter value (not a timing)."""
+    if not _stats.enabled:
+        return
+    _stats.timings[name] = 0.0
+    _stats.counts[name] = count
+
+
 def get_report() -> dict[str, dict[str, float | int]]:
     """Get timing report as dict."""
     return {
@@ -86,15 +94,40 @@ def format_report() -> str:
     if not report:
         return "No timing data collected."
 
-    lines = ["", "Timing breakdown:"]
+    time_metrics = []
+    counter_metrics = []
+
     for name, data in report.items():
         total = data["total_seconds"]
         count = data["count"]
-        if count == 1:
-            lines.append(f"  {name:30s} {total:>8.3f}s")
+        is_counter = (
+            total == 0.0
+            or name.startswith("propagation_")
+            and name
+            not in (
+                "propagation_setup",
+                "propagation_fixpoint",
+            )
+        )
+
+        if is_counter:
+            counter_metrics.append((name, count))
+        elif count == 1:
+            time_metrics.append((name, f"{total:>8.3f}s"))
         else:
             avg_ms = data["avg_ms"]
-            lines.append(f"  {name:30s} {total:>8.3f}s  ({count:,} calls, {avg_ms:.2f}ms avg)")
+            time_metrics.append((name, f"{total:>8.3f}s  ({count:,} calls, {avg_ms:.2f}ms avg)"))
+
+    lines = ["", "Timing breakdown:"]
+    for name, value in time_metrics:
+        lines.append(f"  {name:30s} {value}")
+
+    if counter_metrics:
+        lines.append("")
+        lines.append("Propagation stats:")
+        for name, count in counter_metrics:
+            display_name = name.replace("propagation_", "  ")
+            lines.append(f"  {display_name:30s} {count:,}")
 
     return "\n".join(lines)
 

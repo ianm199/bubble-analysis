@@ -185,19 +185,34 @@ Timing breakdown:
 
 ## Benchmarks
 
-### Typical Performance (with cache)
+### Real-World Codebases (Cold, No Cache)
 
-| Codebase Size | Files | Call Sites | Stats | Audit |
-|---------------|-------|------------|-------|-------|
-| Small (~100 files) | 100 | 2k | <0.5s | <1s |
-| Medium (~500 files) | 500 | 15k | <1s | <3s |
-| Large (~1000 files) | 1000 | 40k | <2s | <5s |
+Tested on Apple M-series Mac with 8+ cores:
 
-### Cold vs Cached Extraction
+| Codebase | Files | Wall Time | CPU Util | Throughput |
+|----------|-------|-----------|----------|------------|
+| Apache Superset | 1,129 | 27s | 921% | 42 files/s |
+| Sentry | 7,469 | 104s | 1019% | 72 files/s |
 
-| Codebase | Cold (no cache) | Cached |
-|----------|-----------------|--------|
-| 500 files | ~45s | <0.1s |
-| 1000 files | ~100s | <0.3s |
+Larger codebases achieve better throughput due to improved parallelism utilization.
 
-The SQLite cache provides 100-500x speedup on subsequent runs.
+### Timing Breakdown (Superset)
+
+```
+parallel_extraction               24.5s  (91% of time)
+propagation_fixpoint               1.4s
+propagation_setup                  0.02s
+file_discovery                     0.05s
+model_aggregation                  0.02s
+```
+
+### Cached Performance
+
+| Codebase | Cold (no cache) | Cached | Speedup |
+|----------|-----------------|--------|---------|
+| Superset (1,129 files) | 27s | 3.7s | 7x |
+| Sentry (7,469 files) | 104s | 0.9s | 116x |
+
+Note: Cached time includes propagation analysis. Superset has many entrypoints requiring deeper analysis; Sentry has no Flask routes so propagation is skipped.
+
+The SQLite cache eliminates extraction time entirely on subsequent runs.
