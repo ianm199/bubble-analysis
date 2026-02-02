@@ -1,4 +1,4 @@
-# Flow Analysis Tool
+# Bubble Analysis Tool
 
 A Python static analysis tool that traces exception flow through codebases. Answers questions like "what HTTP endpoints can trigger this exception?"
 
@@ -152,7 +152,7 @@ This pattern informed the layered design. Each layer handles one hop in the chai
 ## Code Organization
 
 ```
-flow/
+bubble/
 ├── models.py       # Core data structures (CallSite, RaiseSite, etc.)
 ├── extractor.py    # libcst visitors that build the program model
 ├── propagation.py  # Exception flow computation (fixpoint iteration)
@@ -176,16 +176,16 @@ flow/
     ├── flask/          # Flask integration
     │   ├── detector.py     # FlaskRouteVisitor, FlaskErrorHandlerVisitor
     │   ├── semantics.py    # EXCEPTION_RESPONSES (HTTPException mappings)
-    │   └── cli.py          # `flow flask` subcommands
+    │   └── cli.py          # `bubble flask` subcommands
     │
     ├── fastapi/        # FastAPI integration
     │   ├── detector.py     # FastAPIRouteVisitor, FastAPIExceptionHandlerVisitor
     │   ├── semantics.py    # EXCEPTION_RESPONSES
-    │   └── cli.py          # `flow fastapi` subcommands
+    │   └── cli.py          # `bubble fastapi` subcommands
     │
     └── cli_scripts/    # CLI script integration
         ├── detector.py     # CLIEntrypointVisitor
-        └── cli.py          # `flow cli` subcommands
+        └── cli.py          # `bubble cli` subcommands
 ```
 
 ### Architecture: Clean Separation of Concerns
@@ -316,7 +316,7 @@ Framework-specific exception handling (HTTPException → HTTP response) is now i
 
 **Timing instrumentation** available via `--timing` flag:
 ```bash
-flow --timing flask audit
+bubble --timing flask audit
 ```
 
 See `docs/PERFORMANCE.md` for detailed benchmarks and optimization patterns.
@@ -362,7 +362,7 @@ Framework-specific code is isolated in the `integrations/` directory:
 Each framework (flask/, fastapi/, cli_scripts/) has:
 - **detector.py**: AST visitors to detect routes/handlers
 - **semantics.py**: Exception-to-HTTP-response mappings
-- **cli.py**: Subcommands registered under `flow <framework>`
+- **cli.py**: Subcommands registered under `bubble <framework>`
 
 ### cli.py
 
@@ -377,42 +377,42 @@ Thin layer (~300 lines) that only does:
 ### Core Commands (framework-agnostic)
 
 ```bash
-flow raises <Exception> [-s]      # Find where exception is raised (-s includes subclasses)
-flow escapes <function>           # What exceptions can escape from this function?
-flow escapes <function> --strict  # High precision mode (only resolved calls)
-flow callers <function> [-r]      # Who calls this function? (-r shows resolution kind)
-flow catches <Exception>          # Where is this exception caught?
-flow trace <function>             # Visualize exception flow as a call tree
-flow exceptions                    # Show exception class hierarchy
-flow stubs list                    # Show loaded exception stubs
-flow stubs validate                # Validate stub YAML files
-flow stats                         # Codebase statistics
+bubble raises <Exception> [-s]      # Find where exception is raised (-s includes subclasses)
+bubble escapes <function>           # What exceptions can escape from this function?
+bubble escapes <function> --strict  # High precision mode (only resolved calls)
+bubble callers <function> [-r]      # Who calls this function? (-r shows resolution kind)
+bubble catches <Exception>          # Where is this exception caught?
+bubble trace <function>             # Visualize exception flow as a call tree
+bubble exceptions                    # Show exception class hierarchy
+bubble stubs list                    # Show loaded exception stubs
+bubble stubs validate                # Validate stub YAML files
+bubble stats                         # Codebase statistics
 ```
 
 ### Framework-Specific Commands (namespaced)
 
 ```bash
 # Flask
-flow flask audit                  # Check Flask routes for escaping exceptions
-flow flask entrypoints            # List Flask HTTP routes
-flow flask routes-to <Exception>  # Which Flask routes can trigger this exception?
+bubble flask audit                  # Check Flask routes for escaping exceptions
+bubble flask entrypoints            # List Flask HTTP routes
+bubble flask routes-to <Exception>  # Which Flask routes can trigger this exception?
 
 # FastAPI
-flow fastapi audit                # Check FastAPI routes for escaping exceptions
-flow fastapi entrypoints          # List FastAPI HTTP routes
-flow fastapi routes-to <Exception># Which FastAPI routes can trigger this exception?
+bubble fastapi audit                # Check FastAPI routes for escaping exceptions
+bubble fastapi entrypoints          # List FastAPI HTTP routes
+bubble fastapi routes-to <Exception># Which FastAPI routes can trigger this exception?
 
 # CLI scripts (if __name__ == "__main__")
-flow cli audit                    # Check CLI scripts for escaping exceptions
-flow cli entrypoints              # List CLI scripts
-flow cli scripts-to <Exception>   # Which CLI scripts can trigger this exception?
+bubble cli audit                    # Check CLI scripts for escaping exceptions
+bubble cli entrypoints              # List CLI scripts
+bubble cli scripts-to <Exception>   # Which CLI scripts can trigger this exception?
 ```
 
 **Typical workflow:**
 ```bash
-flow flask audit              # Find which routes have uncaught exceptions
-flow escapes <function>       # Investigate a specific one
-flow trace <function>         # Visualize the call tree
+bubble flask audit              # Find which routes have uncaught exceptions
+bubble escapes <function>       # Investigate a specific one
+bubble trace <function>         # Visualize the call tree
 ```
 
 ## Gotchas
@@ -427,7 +427,7 @@ flow trace <function>         # Visualize the call tree
 
 **Near-term:**
 - `--entrypoint` filter for raises - scope to specific endpoint
-- `flow exception-map <endpoint>` - inverse of entrypoints-to
+- `bubble exception-map <endpoint>` - inverse of entrypoints-to
 - Exception-specific stats - raises/catches/entrypoints for one type
 - Distinguish dead code vs test/CLI/background job callers
 
@@ -435,10 +435,10 @@ flow trace <function>         # Visualize the call tree
 - Pyright integration for type-aware resolution
 
 **Completed:**
-- External library exception stubs (declare what `requests.get()` can raise) - see `flow stubs`
+- External library exception stubs (declare what `requests.get()` can raise) - see `bubble stubs`
 - Confidence tiers for heuristic vs precise resolution - see `--strict` flag and confidence labels
 - Framework-handled exceptions (HTTPException → HTTP response) - auto-detected for Flask/FastAPI
-- Separation of core and integrations - framework-specific code in `flow/integrations/`
+- Separation of core and integrations - framework-specific code in `bubble/integrations/`
 
 ## Code Style
 

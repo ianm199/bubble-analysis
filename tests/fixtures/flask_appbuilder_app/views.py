@@ -1,9 +1,8 @@
 """Flask-AppBuilder views using @expose decorator."""
 
-from flask_appbuilder import AppBuilder, BaseView, expose
-from flask_appbuilder.api import BaseApi
-
 from errors import DatabaseError, ValidationError
+from flask_appbuilder import BaseView, expose
+from flask_appbuilder.api import BaseApi
 
 
 class DatabaseRestApi(BaseApi):

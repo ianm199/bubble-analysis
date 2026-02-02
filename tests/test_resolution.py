@@ -1,8 +1,8 @@
 """Tests for call resolution improvements."""
 
-from flow.enums import ConfidenceLevel, ResolutionKind
-from flow.models import ProgramModel, ResolutionEdge, compute_confidence
-from flow.propagation import compute_direct_raises, propagate_exceptions
+from bubble.enums import ConfidenceLevel, ResolutionKind
+from bubble.models import ProgramModel, ResolutionEdge, compute_confidence
+from bubble.propagation import compute_direct_raises, propagate_exceptions
 
 
 class TestCanonicalNaming:
@@ -74,6 +74,31 @@ class TestMethodExceptionPropagation:
         assert "RuntimeError" in caller_exceptions, (
             f"RuntimeError should propagate from ServiceA.process() to caller(), "
             f"but caller only has: {caller_exceptions}"
+        )
+
+    def test_exceptions_do_not_leak_between_same_named_methods(
+        self, resolution_model: ProgramModel
+    ):
+        """OSError from ServiceB.process() should NOT leak to caller() which uses ServiceA.
+
+        This tests the key format normalization fix: when caller() calls ServiceA().process(),
+        only RuntimeError from ServiceA should propagate, not OSError from ServiceB.process().
+        Without proper normalization, name-based fallback matches ALL .process() methods.
+        """
+        propagation = propagate_exceptions(resolution_model)
+
+        caller_key = None
+        for key in propagation.propagated_raises:
+            if key.endswith("::caller"):
+                caller_key = key
+                break
+
+        assert caller_key is not None, "Should find caller in propagated_raises"
+        caller_exceptions = propagation.propagated_raises.get(caller_key, set())
+
+        assert "OSError" not in caller_exceptions, (
+            f"OSError from ServiceB.process() should NOT leak to caller() which uses ServiceA, "
+            f"but caller has: {caller_exceptions}"
         )
 
 

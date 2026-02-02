@@ -155,7 +155,7 @@ with ProcessPoolExecutor(max_workers=max_workers) as executor:
 Enable with `--timing` flag:
 
 ```bash
-flow --timing flask audit -d /path/to/project
+bubble --timing flask audit -d /path/to/project
 ```
 
 Output:

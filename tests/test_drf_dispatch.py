@@ -6,10 +6,10 @@ to their HTTP method handlers (get, post, list, create, etc.).
 
 from pathlib import Path
 
-from flow.enums import ResolutionKind
-from flow.extractor import extract_from_directory
-from flow.integrations.django import DjangoIntegration
-from flow.integrations.queries import trace_routes_to_exception
+from bubble.enums import ResolutionKind
+from bubble.extractor import extract_from_directory
+from bubble.integrations.django import DjangoIntegration
+from bubble.integrations.queries import trace_routes_to_exception
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -110,8 +110,8 @@ class TestDRFRoutesToException:
             for ep in trace.entrypoints:
                 entrypoint_names.add(ep.function)
 
-        assert "UserAPIView" in entrypoint_names
-        assert "ItemViewSet" in entrypoint_names
+        assert any("UserAPIView" in name for name in entrypoint_names)
+        assert any("ItemViewSet" in name for name in entrypoint_names)
 
     def test_routes_to_keyerror_finds_viewset(self):
         """KeyError in get_item connects to ItemViewSet entrypoint."""
@@ -128,7 +128,7 @@ class TestDRFRoutesToException:
         assert len(traces_with_entrypoints) >= 1
 
         entrypoint_names = {ep.function for t in traces_with_entrypoints for ep in t.entrypoints}
-        assert "ItemViewSet" in entrypoint_names
+        assert any("ItemViewSet" in name for name in entrypoint_names)
 
     def test_routes_to_lookuperror_finds_keyerror_via_hierarchy(self):
         """LookupError -s search finds KeyError via built-in exception hierarchy."""

@@ -6,8 +6,8 @@ that is hard to exercise end-to-end.
 
 from pathlib import Path
 
-from flow.extractor import extract_from_directory
-from flow.propagation import compute_direct_raises, propagate_exceptions
+from bubble.extractor import extract_from_directory
+from bubble.propagation import compute_direct_raises, propagate_exceptions
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

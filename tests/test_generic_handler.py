@@ -1,7 +1,7 @@
 """Tests for generic exception handler detection."""
 
-from flow.integrations import get_integration_by_name, load_builtin_integrations
-from flow.integrations.queries import audit_integration
+from bubble.integrations import get_integration_by_name, load_builtin_integrations
+from bubble.integrations.queries import audit_integration
 
 
 def test_generic_handler_detected(generic_handler_model):

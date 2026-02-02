@@ -25,8 +25,8 @@ TARGETS = {
 
 def run_benchmark(target_path: Path, name: str, verbose: bool = True, skip_evidence: bool = False) -> dict:
     """Run propagation benchmark on a target directory."""
-    from flow.extractor import extract_from_directory
-    from flow.propagation import propagate_exceptions, clear_propagation_cache
+    from bubble.extractor import extract_from_directory
+    from bubble.propagation import propagate_exceptions, clear_propagation_cache
 
     clear_propagation_cache()
 
@@ -68,8 +68,8 @@ def run_with_profile(target_path: Path, name: str):
     import pstats
     from io import StringIO
 
-    from flow.extractor import extract_from_directory
-    from flow.propagation import propagate_exceptions, clear_propagation_cache
+    from bubble.extractor import extract_from_directory
+    from bubble.propagation import propagate_exceptions, clear_propagation_cache
 
     clear_propagation_cache()
 

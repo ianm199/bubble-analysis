@@ -5,9 +5,9 @@ back to entrypoints. This was a bug where routes-to would fail to find
 connections that audit found successfully.
 """
 
-from flow.integrations.flask import FlaskIntegration
-from flow.integrations.queries import trace_routes_to_exception
-from flow.models import ProgramModel
+from bubble.integrations.flask import FlaskIntegration
+from bubble.integrations.queries import trace_routes_to_exception
+from bubble.models import ProgramModel
 
 
 class TestRoutesToTracesCallChains:

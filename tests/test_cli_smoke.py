@@ -85,3 +85,33 @@ def test_cli_stubs_validate():
     result = run_cli("stubs", "validate", fixture=None)
     assert result.returncode == 0
     assert "valid" in result.stdout.lower()
+
+
+class TestAuditFilter:
+    """Tests for audit command filter argument."""
+
+    def test_flask_audit_no_filter(self):
+        """Flask audit without filter scans all routes."""
+        result = run_cli("flask", "audit")
+        assert result.returncode == 0
+
+    def test_flask_audit_route_filter(self):
+        """Flask audit with route filter only audits matching routes."""
+        result = run_cli("flask", "audit", "/users")
+        assert result.returncode == 0
+
+    def test_flask_audit_nonexistent_route(self):
+        """Flask audit with non-existent route shows helpful message."""
+        result = run_cli("flask", "audit", "/nonexistent")
+        assert result.returncode == 0
+        assert "No Flask routes found" in result.stdout
+
+    def test_flask_audit_file_filter(self):
+        """Flask audit with file filter only audits routes in that file."""
+        result = run_cli("flask", "audit", "app.py")
+        assert result.returncode == 0
+
+    def test_flask_entrypoints_route_filter(self):
+        """Flask entrypoints with route filter only lists matching routes."""
+        result = run_cli("flask", "entrypoints", "/users")
+        assert result.returncode == 0

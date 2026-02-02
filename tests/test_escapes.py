@@ -1,6 +1,6 @@
 """Tests for exception escape analysis."""
 
-from flow.propagation import propagate_exceptions
+from bubble.propagation import propagate_exceptions
 
 
 def test_direct_raises_escape(flask_model):

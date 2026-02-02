@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flow-analysis"
-version = "0.2.0"
+name = "bubble-analysis"
+version = "0.3.0"
 description = "Static analysis tool for tracing exception flow through Python codebases"
 readme = "README.md"
 license = "MIT"
@@ -54,14 +54,15 @@ Repository = "https://github.com/ianm199/flow"
 Issues = "https://github.com/ianm199/flow/issues"
 
 [project.scripts]
-flow = "flow.cli:app"
+bubble = "bubble.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["flow*"]
+include = ["bubble*"]
 
 [tool.pyright]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
+exclude = ["examples"]
 
 [tool.ruff]
 line-length = 100
@@ -85,7 +86,7 @@ ignore = [
 "tests/*" = ["ANN", "E402"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["flow"]
+known-first-party = ["bubble"]
 
 [tool.ruff.format]
 quote-style = "double"

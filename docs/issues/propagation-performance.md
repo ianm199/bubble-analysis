@@ -211,7 +211,7 @@ print(f'Propagation: {time.time() - start:.2f}s')
 "
 
 # Full audit with timing breakdown
-flow --timing django audit -d /tmp/sentry --no-cache
+bubble --timing django audit -d /tmp/sentry --no-cache
 ```
 
 ## Current Timing Data

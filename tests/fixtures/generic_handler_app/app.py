@@ -1,8 +1,7 @@
 """Flask app with generic Exception handler."""
 
+from errors import AppError, UnknownError, ValidationError
 from flask import Flask
-
-from errors import AppError, ValidationError, UnknownError
 
 app = Flask(__name__)
 

@@ -6,7 +6,7 @@ The `routes-to` command currently lacks the `--strict` flag that `escapes` has. 
 
 ## Example of the Problem
 
-Running `flow fastapi routes-to KeyError` on Airflow produced:
+Running `bubble fastapi routes-to KeyError` on Airflow produced:
 
 ```
 providers/microsoft/azure/.../data_factory.py:145 in get_field()
@@ -21,10 +21,10 @@ The Azure provider's `get_field()` function is matched by name to unrelated code
 
 ```bash
 # escapes has --strict
-flow escapes my_function --strict  # ✓ Works
+bubble escapes my_function --strict  # ✓ Works
 
 # routes-to does not
-flow fastapi routes-to ValueError --strict  # ✗ "No such option: --strict"
+bubble fastapi routes-to ValueError --strict  # ✗ "No such option: --strict"
 ```
 
 ## Requested Behavior

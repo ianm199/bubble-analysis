@@ -9,8 +9,8 @@ This document provides instructions for systematically testing Flow against real
 cd /tmp
 git clone --depth 1 <target-repo>
 cd <target-repo>
-flow stats --no-cache
-flow <framework> audit  # flask, fastapi, or cli
+bubble stats --no-cache
+bubble <framework> audit  # flask, fastapi, or cli
 ```
 
 ## Learnings & Tips (Read This First!)
@@ -19,27 +19,27 @@ These tips come from completed dogfooding runs and will save you time:
 
 ### For Web Apps (Flask/FastAPI)
 ```bash
-flow stats --no-cache              # Basic metrics
-flow <framework> entrypoints       # See routes
-flow <framework> audit             # Find issues
-flow <framework> routes-to <Exc>   # Trace specific exception to routes
-flow escapes <function>            # Deep dive on specific function
+bubble stats --no-cache              # Basic metrics
+bubble <framework> entrypoints       # See routes
+bubble <framework> audit             # Find issues
+bubble <framework> routes-to <Exc>   # Trace specific exception to routes
+bubble escapes <function>            # Deep dive on specific function
 ```
 
 ### For Libraries (no HTTP routes)
 ```bash
-flow stats --no-cache              # Basic metrics
-flow exceptions                    # Exception hierarchy (very useful!)
-flow raises <Exception> -s         # Find all raises of exception + subclasses
-flow escapes <public_function>     # What can escape from public API
-flow callers <function> -r         # Who calls this, with resolution info
+bubble stats --no-cache              # Basic metrics
+bubble exceptions                    # Exception hierarchy (very useful!)
+bubble raises <Exception> -s         # Find all raises of exception + subclasses
+bubble escapes <public_function>     # What can escape from public API
+bubble callers <function> -r         # Who calls this, with resolution info
 ```
 
 ### Key Insights
 - **Flow finds BUGS in web apps** - httpbin proved this (found real 500 errors)
 - **Flow is a DOCUMENTATION tool for libraries** - useful for understanding exception flow, but won't find bugs (exceptions are supposed to escape)
 - **Low confidence is OK for libraries** - name_fallback resolution is expected when there are no type hints
-- **`flow exceptions`** - extremely valuable for libraries, shows full hierarchy
+- **`bubble exceptions`** - extremely valuable for libraries, shows full hierarchy
 - **`--strict` mode** - often too aggressive, filters out real findings
 - **Build time** - expect ~1.5s per 1k LOC on first run
 - **Always use `--depth 1`** when cloning to save time
@@ -49,7 +49,7 @@ flow callers <function> -r         # Who calls this, with resolution info
 | Codebase Type | Flow's Value | Primary Use Case |
 |---------------|--------------|------------------|
 | Flask/FastAPI apps | **High** - finds real bugs | Catch uncaught exceptions before they become 500s |
-| Django apps | **High** - finds real bugs | Same as Flask/FastAPI, now with `flow django` support |
+| Django apps | **High** - finds real bugs | Same as Flask/FastAPI, now with `bubble django` support |
 | Libraries | **Documentation only** | Generate "what can this raise?" docs |
 | CLI tools | Medium | Check `if __name__ == "__main__"` error handling |
 
@@ -94,9 +94,9 @@ flow callers <function> -r         # Who calls this, with resolution info
 - Entrypoints: 2 CLI scripts only
 
 **Key Findings:**
-- `flow exceptions` correctly parsed full RequestException hierarchy (20+ exception types)
-- `flow raises RequestException -s` found all 34 raise sites
-- `flow escapes get` shows complete list of what can escape from public API
+- `bubble exceptions` correctly parsed full RequestException hierarchy (20+ exception types)
+- `bubble raises RequestException -s` found all 34 raise sites
+- `bubble escapes get` shows complete list of what can escape from public API
 
 **Honest Assessment:**
 Flow did NOT find any bugs here. The exceptions are *supposed* to escape - that's the library's API. For libraries, escaping exceptions is the design, not a problem.
@@ -112,9 +112,9 @@ Flow did NOT find any bugs here. The exceptions are *supposed* to escape - that'
 
 **Most Useful Commands for Libraries:**
 ```bash
-flow exceptions                    # Shows: RequestException -> ConnectionError -> SSLError etc
-flow raises RequestException -s    # All 34 locations where exceptions are raised
-flow escapes get                   # What can escape from requests.get()
+bubble exceptions                    # Shows: RequestException -> ConnectionError -> SSLError etc
+bubble raises RequestException -s    # All 34 locations where exceptions are raised
+bubble escapes get                   # What can escape from requests.get()
 ```
 
 **Verdict:** ⚠️ Useful as documentation/analysis tool, but NOT a bug finder for libraries
@@ -145,18 +145,18 @@ cd sentry
 cd src/sentry
 
 # Basic analysis
-flow stats --no-cache
-flow django entrypoints      # Django routes
-flow django audit            # Find escaping exceptions
+bubble stats --no-cache
+bubble django entrypoints      # Django routes
+bubble django audit            # Find escaping exceptions
 
 # If Django routes found, trace specific exceptions
-flow django routes-to ValidationError
-flow django routes-to PermissionDenied
-flow django routes-to ObjectDoesNotExist
+bubble django routes-to ValidationError
+bubble django routes-to PermissionDenied
+bubble django routes-to ObjectDoesNotExist
 
 # Also check their API layer (may have Flask/DRF components)
-flow flask entrypoints 2>&1 || echo "No Flask"
-flow fastapi entrypoints 2>&1 || echo "No FastAPI"
+bubble flask entrypoints 2>&1 || echo "No Flask"
+bubble fastapi entrypoints 2>&1 || echo "No FastAPI"
 ```
 
 **What to look for:**
@@ -176,18 +176,18 @@ cd airflow
 # Airflow's web UI is Flask-based
 cd airflow/www
 
-flow stats --no-cache
-flow flask entrypoints
-flow flask audit
+bubble stats --no-cache
+bubble flask entrypoints
+bubble flask audit
 
 # Trace specific exceptions
-flow flask routes-to AirflowException
-flow flask routes-to ValueError
-flow flask routes-to PermissionError
+bubble flask routes-to AirflowException
+bubble flask routes-to ValueError
+bubble flask routes-to PermissionError
 
 # Deep dive on interesting routes
-flow escapes trigger_dag      # DAG triggering
-flow escapes task_instance    # Task management
+bubble escapes trigger_dag      # DAG triggering
+bubble escapes task_instance    # Task management
 ```
 
 **What to look for:**
@@ -205,18 +205,18 @@ git clone --depth 1 https://github.com/apache/superset
 cd superset
 
 # Superset is Flask-based
-flow stats --no-cache
-flow flask entrypoints
-flow flask audit
+bubble stats --no-cache
+bubble flask entrypoints
+bubble flask audit
 
 # Check for SQL injection-adjacent issues (exceptions from bad queries)
-flow flask routes-to SQLAlchemyError
-flow flask routes-to DatabaseError
-flow raises ProgrammingError -s
+bubble flask routes-to SQLAlchemyError
+bubble flask routes-to DatabaseError
+bubble raises ProgrammingError -s
 
 # Check authentication paths
-flow escapes login
-flow escapes oauth_authorized
+bubble escapes login
+bubble escapes oauth_authorized
 ```
 
 **What to look for:**
@@ -286,9 +286,9 @@ Record in results:
 
 ```bash
 # Try each framework detector
-flow flask entrypoints 2>&1 || echo "No Flask routes found"
-flow fastapi entrypoints 2>&1 || echo "No FastAPI routes found"
-flow cli entrypoints 2>&1 || echo "No CLI scripts found"
+bubble flask entrypoints 2>&1 || echo "No Flask routes found"
+bubble fastapi entrypoints 2>&1 || echo "No FastAPI routes found"
+bubble cli entrypoints 2>&1 || echo "No CLI scripts found"
 ```
 
 Record:
@@ -300,8 +300,8 @@ Record:
 
 ```bash
 # Run audit on detected framework
-flow <framework> audit
-flow <framework> audit --strict  # High precision mode
+bubble <framework> audit
+bubble <framework> audit --strict  # High precision mode
 ```
 
 Record:
@@ -313,13 +313,13 @@ Record:
 
 ```bash
 # Find common exception types
-flow raises ValueError -s
-flow raises TypeError -s
-flow raises RuntimeError -s
+bubble raises ValueError -s
+bubble raises TypeError -s
+bubble raises RuntimeError -s
 
 # For web apps, check HTTP exceptions
-flow raises HTTPException -s 2>&1 || true
-flow raises NotFound -s 2>&1 || true
+bubble raises HTTPException -s 2>&1 || true
+bubble raises NotFound -s 2>&1 || true
 ```
 
 Record:
@@ -331,9 +331,9 @@ Record:
 Pick 2-3 interesting functions from the audit and trace them:
 
 ```bash
-flow trace <function-name>
-flow escapes <function-name>
-flow escapes <function-name> --strict
+bubble trace <function-name>
+bubble escapes <function-name>
+bubble escapes <function-name> --strict
 ```
 
 Record:
@@ -404,7 +404,7 @@ For each repository, produce this summary:
 
 ### For Libraries (Tier 3):
 - No entrypoints expected
-- `flow raises` and `flow escapes` should work
+- `bubble raises` and `bubble escapes` should work
 - Test exception hierarchy tracing
 
 ## Reporting Issues
@@ -415,7 +415,7 @@ If you find bugs or gaps, create a structured report:
 ### Issue: <Brief Description>
 
 **Repository:** <name>
-**Command:** `flow <command>`
+**Command:** `bubble <command>`
 **Expected:** <what should happen>
 **Actual:** <what happened>
 **Reproduction:**
@@ -437,8 +437,8 @@ If you are an AI agent running this dogfooding:
 3. **Use `--depth 1` when cloning** - full history is not needed
 4. **Time everything** - we need performance data (use `time flow stats`)
 5. **Pick the right commands for the repo type:**
-   - Web apps: `flow <framework> audit` then `routes-to` for specific exceptions
-   - Libraries: `flow exceptions` then `flow escapes <public_function>`
+   - Web apps: `bubble <framework> audit` then `routes-to` for specific exceptions
+   - Libraries: `bubble exceptions` then `bubble escapes <public_function>`
 6. **Validate findings manually** - don't just report counts, check if they're real
 7. **Be critical** - we want honest feedback, not validation
 8. **Document gaps** - patterns you see that Flow misses are valuable
@@ -450,10 +450,10 @@ The goal is to answer: **"If I used this tool in CI, would it catch real bugs wi
 
 | Repo Type | Primary Commands | Secondary Commands |
 |-----------|------------------|-------------------|
-| Flask app | `flow flask audit`, `flow flask routes-to <Exc>` | `flow escapes <handler>` |
-| FastAPI app | `flow fastapi audit`, `flow fastapi routes-to <Exc>` | `flow escapes <handler>` |
-| Django app | `flow django audit`, `flow django routes-to <Exc>` | `flow escapes <view>` |
-| Library | `flow exceptions`, `flow raises <Exc> -s` | `flow escapes <public_func>` |
+| Flask app | `bubble flask audit`, `bubble flask routes-to <Exc>` | `bubble escapes <handler>` |
+| FastAPI app | `bubble fastapi audit`, `bubble fastapi routes-to <Exc>` | `bubble escapes <handler>` |
+| Django app | `bubble django audit`, `bubble django routes-to <Exc>` | `bubble escapes <view>` |
+| Library | `bubble exceptions`, `bubble raises <Exc> -s` | `bubble escapes <public_func>` |
 
 ## Running the Full Suite
 

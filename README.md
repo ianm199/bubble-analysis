@@ -7,21 +7,21 @@ Static analysis tool for tracing exception flow through Python codebases.
 ## Quick Start
 
 ```bash
-pip install flow-analysis
+pip install bubble-analysis
 ```
 
 ```bash
 # Check Flask routes for uncaught exceptions
-flow flask audit -d /path/to/project
+bubble flask audit -d /path/to/project
 
 # Check FastAPI routes
-flow fastapi audit -d /path/to/project
+bubble fastapi audit -d /path/to/project
 
 # Deep dive into one function
-flow escapes create_user -d /path/to/project
+bubble escapes create_user -d /path/to/project
 
 # Visualize the call tree
-flow trace create_user -d /path/to/project
+bubble trace create_user -d /path/to/project
 ```
 
 ## What It Does
@@ -99,29 +99,29 @@ POST /users  → escapes: ValidationError, ConnectionError
 
 | Command | Description |
 |---------|-------------|
-| `flow raises <exception>` | Find all places an exception is raised |
-| `flow escapes <function>` | Show what can escape from a specific function |
-| `flow callers <function>` | Find all callers of a function |
-| `flow catches <exception>` | Find all places an exception is caught |
-| `flow trace <function>` | Visualize exception flow as a call tree |
-| `flow exceptions` | Show the exception class hierarchy |
-| `flow subclasses <class>` | Show class inheritance tree |
-| `flow stubs <action>` | Manage exception stubs (`list`, `init`, `validate`) |
-| `flow stats` | Show codebase statistics |
+| `bubble raises <exception>` | Find all places an exception is raised |
+| `bubble escapes <function>` | Show what can escape from a specific function |
+| `bubble callers <function>` | Find all callers of a function |
+| `bubble catches <exception>` | Find all places an exception is caught |
+| `bubble trace <function>` | Visualize exception flow as a call tree |
+| `bubble exceptions` | Show the exception class hierarchy |
+| `bubble subclasses <class>` | Show class inheritance tree |
+| `bubble stubs <action>` | Manage exception stubs (`list`, `init`, `validate`) |
+| `bubble stats` | Show codebase statistics |
 
 ### Framework-Specific Commands
 
 | Command | Description |
 |---------|-------------|
-| `flow flask audit` | Check Flask routes for escaping exceptions |
-| `flow flask entrypoints` | List Flask HTTP routes |
-| `flow flask routes-to <exc>` | Which Flask routes can trigger this exception? |
-| `flow fastapi audit` | Check FastAPI routes for escaping exceptions |
-| `flow fastapi entrypoints` | List FastAPI HTTP routes |
-| `flow fastapi routes-to <exc>` | Which FastAPI routes can trigger this exception? |
-| `flow cli audit` | Check CLI scripts for escaping exceptions |
-| `flow cli entrypoints` | List CLI scripts |
-| `flow cli scripts-to <exc>` | Which CLI scripts can trigger this exception? |
+| `bubble flask audit` | Check Flask routes for escaping exceptions |
+| `bubble flask entrypoints` | List Flask HTTP routes |
+| `bubble flask routes-to <exc>` | Which Flask routes can trigger this exception? |
+| `bubble fastapi audit` | Check FastAPI routes for escaping exceptions |
+| `bubble fastapi entrypoints` | List FastAPI HTTP routes |
+| `bubble fastapi routes-to <exc>` | Which FastAPI routes can trigger this exception? |
+| `bubble cli audit` | Check CLI scripts for escaping exceptions |
+| `bubble cli entrypoints` | List CLI scripts |
+| `bubble cli scripts-to <exc>` | Which CLI scripts can trigger this exception? |
 
 All commands accept:
 - `-d, --directory`: Directory to analyze (default: current)
@@ -144,7 +144,7 @@ The `escapes` command accepts additional flags:
 - Celery tasks
 - Scheduled jobs (APScheduler, etc.)
 
-Custom patterns can be added via `.flow/detectors/` (run `flow init` to set up).
+Custom patterns can be added via `.flow/detectors/` (run `bubble init` to set up).
 
 ## Adding Custom Detectors
 
@@ -152,7 +152,7 @@ Flow is designed to be extended with AI coding agents. The detector interface is
 
 To add support for a new framework (Django, Celery, your internal RPC layer, etc.):
 
-1. Run `flow init` to create the `.flow/` directory structure
+1. Run `bubble init` to create the `.flow/` directory structure
 2. Point your AI agent at `flow/protocols.py` to see the `EntrypointDetector` interface
 3. Ask it to implement a detector for your framework in `.flow/detectors/`
 
@@ -199,7 +199,7 @@ mylib:
     - TimeoutError
 ```
 
-Manage stubs with `flow stubs list` and `flow stubs validate`.
+Manage stubs with `bubble stubs list` and `bubble stubs validate`.
 
 ## How It Works
 

@@ -6,10 +6,10 @@ without needing explicit class definitions in user code.
 
 from pathlib import Path
 
-from flow.extractor import extract_from_directory
-from flow.integrations.flask import FlaskIntegration
-from flow.integrations.queries import audit_integration
-from flow.models import BUILTIN_EXCEPTION_HIERARCHY, ClassHierarchy
+from bubble.extractor import extract_from_directory
+from bubble.integrations.flask import FlaskIntegration
+from bubble.integrations.queries import audit_integration
+from bubble.models import BUILTIN_EXCEPTION_HIERARCHY, ClassHierarchy
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

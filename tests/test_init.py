@@ -7,7 +7,7 @@ import sys
 def test_init_creates_flow_directory(temp_project):
     """Init creates .flow/ directory."""
     result = subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )
@@ -19,7 +19,7 @@ def test_init_creates_flow_directory(temp_project):
 def test_init_creates_config(temp_project):
     """Init creates config.yaml file."""
     subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )
@@ -31,7 +31,7 @@ def test_init_creates_config(temp_project):
 def test_init_creates_detectors_dir(temp_project):
     """Init creates detectors/ directory."""
     subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )
@@ -43,7 +43,7 @@ def test_init_creates_detectors_dir(temp_project):
 def test_init_creates_example_detector(temp_project):
     """Init creates example detector file."""
     subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )
@@ -61,7 +61,7 @@ def test_init_detects_flask(flask_fixture, temp_project):
     (temp_project / "errors.py").write_text(errors_content)
 
     result = subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )
@@ -76,7 +76,7 @@ def test_init_already_exists(temp_project):
     (temp_project / ".flow").mkdir()
 
     result = subprocess.run(
-        [sys.executable, "-m", "flow.cli", "init", "-d", str(temp_project)],
+        [sys.executable, "-m", "bubble.cli", "init", "-d", str(temp_project)],
         capture_output=True,
         text=True,
     )

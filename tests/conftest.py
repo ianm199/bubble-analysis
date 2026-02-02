@@ -6,10 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from flow.extractor import extract_from_directory
-from flow.models import ProgramModel
+from bubble.extractor import extract_from_directory
+from bubble.models import ProgramModel
+from bubble.propagation import clear_propagation_cache
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def _clear_caches() -> None:
+    """Clear propagation caches before each test to prevent test pollution."""
+    clear_propagation_cache()
 
 
 @pytest.fixture
@@ -61,6 +68,30 @@ def generic_handler_model() -> ProgramModel:
 
 
 @pytest.fixture
+def flask_restful_model() -> ProgramModel:
+    """Pre-built model for flask_restful_app fixture."""
+    return extract_from_directory(FIXTURES / "flask_restful_app", use_cache=False)
+
+
+@pytest.fixture
+def flask_restful_crossfile_model() -> ProgramModel:
+    """Pre-built model for flask_restful_crossfile fixture (cross-file correlation test)."""
+    return extract_from_directory(FIXTURES / "flask_restful_crossfile", use_cache=False)
+
+
+@pytest.fixture
+def catches_flow_model() -> ProgramModel:
+    """Pre-built model for catches_flow_test fixture (flow-aware catches testing)."""
+    return extract_from_directory(FIXTURES / "catches_flow_test", use_cache=False)
+
+
+@pytest.fixture
+def remote_handler_model() -> ProgramModel:
+    """Pre-built model for remote_handler_app fixture (cross-file handler testing)."""
+    return extract_from_directory(FIXTURES / "remote_handler_app", use_cache=False)
+
+
+@pytest.fixture
 def temp_project():
     """Create a temporary project directory."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -75,7 +106,7 @@ def flask_fixture():
 
 def run_cli(*args: str, fixture: str | None = "flask_app") -> subprocess.CompletedProcess[str]:
     """Run flow CLI command via subprocess (for smoke tests only)."""
-    cmd = [sys.executable, "-m", "flow.cli", *args]
+    cmd = [sys.executable, "-m", "bubble.cli", *args]
     if fixture is not None:
         cmd.extend(["--no-cache", "-d", str(FIXTURES / fixture)])
     return subprocess.run(cmd, capture_output=True, text=True)

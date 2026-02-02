@@ -2,13 +2,13 @@
 
 from pathlib import Path
 
-from flow.config import FlowConfig, load_config
-from flow.detectors import FRAMEWORK_EXCEPTION_RESPONSES
-from flow.enums import ConfidenceLevel, ResolutionKind, ResolutionMode
-from flow.extractor import extract_from_directory
-from flow.models import ResolutionEdge, compute_confidence
-from flow.propagation import propagate_exceptions
-from flow.stubs import load_stubs, validate_stub_file
+from bubble.config import FlowConfig, load_config
+from bubble.detectors import FRAMEWORK_EXCEPTION_RESPONSES
+from bubble.enums import ConfidenceLevel, ResolutionKind, ResolutionMode
+from bubble.extractor import extract_from_directory
+from bubble.models import ResolutionEdge, compute_confidence
+from bubble.propagation import propagate_exceptions
+from bubble.stubs import load_stubs, validate_stub_file
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
