@@ -146,33 +146,52 @@ The `escapes` command accepts additional flags:
 
 Custom patterns can be added via `.flow/detectors/` (run `bubble init` to set up).
 
-## Adding Custom Detectors
+## Extending Bubble
 
-Flow is designed to be extended with AI coding agents. The detector interface is intentionally simple: implement a protocol that returns entrypoints and handlers from parsed code.
+Bubble traces exceptions from raise sites to application boundaries. For this to work, it needs to know:
 
-To add support for a new framework (Django, Celery, your internal RPC layer, etc.):
+1. **Where are the boundaries?** (entrypoints like HTTP routes, queue handlers)
+2. **What catches exceptions at those boundaries?** (global handlers)
+3. **Which exceptions does the framework handle automatically?** (semantics)
 
-1. Run `bubble init` to create the `.flow/` directory structure
-2. Point your AI agent at `flow/protocols.py` to see the `EntrypointDetector` interface
-3. Ask it to implement a detector for your framework in `.flow/detectors/`
+Built-in integrations handle Flask, FastAPI, and CLI scripts. For anything else (Django, Celery, gRPC, your internal RPC layer), you extend bubble.
 
-Example prompt for an AI agent:
+### Quick Start
+
+Place a detector in `.flow/detectors/` and bubble will auto-load it:
+
+```python
+# .flow/detectors/celery.py
+from bubble.protocols import EntrypointDetector
+from bubble.integrations.base import Entrypoint
+from bubble.enums import EntrypointKind
+import libcst as cst
+
+class CeleryTaskDetector(EntrypointDetector):
+    def detect(self, source: str, file_path: str) -> list[Entrypoint]:
+        # Find @app.task decorators, return Entrypoint objects
+        ...
+```
+
+### Extension Points
+
+| I want to... | Implement | Put it in |
+|--------------|-----------|-----------|
+| Detect custom entrypoints | `EntrypointDetector` | `.flow/detectors/` |
+| Detect custom handlers | `GlobalHandlerDetector` | `.flow/detectors/` |
+| Full framework support | `Integration` | `bubble/integrations/` |
+
+See **[docs/EXTENDING.md](docs/EXTENDING.md)** for the full guide with examples for Celery, Django REST Framework, and more.
+
+### Using AI Agents
+
+The protocol is intentionally simple for LLMs. Give your agent this prompt:
 
 ```
-Read flow/protocols.py and flow/detectors.py to understand how entrypoint
-detection works. Then implement a detector for Django that finds:
-- Views decorated with @api_view
-- Class-based views inheriting from APIView
-- URL patterns in urls.py
-
-Put the implementation in .flow/detectors/django.py
+Read bubble/protocols.py and bubble/integrations/flask/detector.py.
+Implement a detector for [YOUR FRAMEWORK] that finds [PATTERNS].
+Put it in .flow/detectors/[framework].py
 ```
-
-The detector just needs to implement:
-- `detect_entrypoints(functions, classes, ...)` → list of `Entrypoint`
-- `detect_global_handlers(...)` → list of `GlobalHandler`
-
-Flow will automatically load any `.py` files in `.flow/detectors/` and use them alongside the built-in Flask/FastAPI detectors.
 
 ## Configuration
 
