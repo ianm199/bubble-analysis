@@ -247,7 +247,7 @@ def audit_integration(
             k: v for k, v in flow.caught_by_remote_global.items() if k not in reraise_patterns
         }
 
-        if real_uncaught or real_generic or real_remote:
+        if real_uncaught or real_generic:
             issues.append(
                 AuditIssue(
                     entrypoint=entrypoint,

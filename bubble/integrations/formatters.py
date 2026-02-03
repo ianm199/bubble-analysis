@@ -111,17 +111,6 @@ def audit(
                 if len(raise_sites) > 2:
                     console.print(f"    [dim]...and {len(raise_sites) - 2} more[/dim]")
 
-            for exc_type, raise_sites in issue.caught_by_remote.items():
-                exc_simple = exc_type.split(".")[-1]
-                for rs in raise_sites[:2]:
-                    rel = _rel_path(rs.file, directory)
-                    console.print(
-                        f"    [blue]{exc_simple}[/blue] [dim]({rel}:{rs.line}) "
-                        f"- caught by handler in different file[/dim]"
-                    )
-                if len(raise_sites) > 2:
-                    console.print(f"    [dim]...and {len(raise_sites) - 2} more[/dim]")
-
             console.print()
     else:
         console.print("[green bold]All entrypoints have specific exception handlers[/green bold]\n")
