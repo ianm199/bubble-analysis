@@ -82,6 +82,7 @@ POST /users  → escapes: ValidationError, ConnectionError
 
 ## Features
 
+- **Extensible**: Adapt to any framework or custom pattern ([see extending guide](docs/EXTENDING.md))
 - **Entrypoint detection**: Flask routes, FastAPI routes, CLI scripts (`if __name__ == "__main__"`)
 - **Global handler awareness**: Understands `@errorhandler`, `add_exception_handler`
 - **Exception hierarchy**: Knows that catching `AppError` also catches `ValidationError` if it's a subclass
@@ -149,24 +150,29 @@ Custom patterns can be added via `.flow/detectors/`.
 
 ## Extending Bubble
 
-Bubble traces exceptions from raise sites to application boundaries. For this to work, it needs to know:
+> **Bubble is designed to be adapted to your codebase.** The core engine handles exception propagation—you just tell it where your entrypoints are.
 
-1. **Where are the boundaries?** (entrypoints like HTTP routes, queue handlers)
-2. **What catches exceptions at those boundaries?** (global handlers)
-3. **Which exceptions does the framework handle automatically?** (semantics)
+Every codebase has its own patterns: internal RPC frameworks, custom decorators, queue handlers, scheduled jobs. Bubble's extension system lets you teach it your patterns without modifying the core.
 
-Built-in integrations handle Flask, FastAPI, and CLI scripts. For anything else (Django, Celery, gRPC, your internal RPC layer), you extend bubble.
+**Full guide: [docs/EXTENDING.md](docs/EXTENDING.md)**
 
-### Quick Start
+### What You Can Extend
 
-Place a detector in `.flow/detectors/` and bubble will auto-load it:
+| Pattern | Example | How to add |
+|---------|---------|------------|
+| Custom entrypoints | Celery tasks, Django views, gRPC handlers | `EntrypointDetector` |
+| Custom error handlers | Middleware, decorators | `GlobalHandlerDetector` |
+| Full framework | Django REST Framework, Airflow | `Integration` protocol |
+
+### Quick Example
+
+Drop a detector in `.flow/detectors/` and bubble auto-loads it:
 
 ```python
 # .flow/detectors/celery.py
 from bubble.protocols import EntrypointDetector
 from bubble.integrations.base import Entrypoint
 from bubble.enums import EntrypointKind
-import libcst as cst
 
 class CeleryTaskDetector(EntrypointDetector):
     def detect(self, source: str, file_path: str) -> list[Entrypoint]:
@@ -174,25 +180,17 @@ class CeleryTaskDetector(EntrypointDetector):
         ...
 ```
 
-### Extension Points
+### AI-Friendly Design
 
-| I want to... | Implement | Put it in |
-|--------------|-----------|-----------|
-| Detect custom entrypoints | `EntrypointDetector` | `.flow/detectors/` |
-| Detect custom handlers | `GlobalHandlerDetector` | `.flow/detectors/` |
-| Full framework support | `Integration` | `bubble/integrations/` |
-
-See **[docs/EXTENDING.md](docs/EXTENDING.md)** for the full guide with examples for Celery, Django REST Framework, and more.
-
-### Using AI Agents
-
-The protocol is intentionally simple for LLMs. Give your agent this prompt:
+The protocol is intentionally simple for LLMs. Give your agent:
 
 ```
 Read bubble/protocols.py and bubble/integrations/flask/detector.py.
 Implement a detector for [YOUR FRAMEWORK] that finds [PATTERNS].
 Put it in .flow/detectors/[framework].py
 ```
+
+See **[docs/EXTENDING.md](docs/EXTENDING.md)** for complete examples including Celery, Django REST Framework, and custom decorator patterns.
 
 ## Configuration
 
