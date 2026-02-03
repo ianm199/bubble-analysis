@@ -12,6 +12,7 @@ from bubble.propagation import (
     build_forward_call_graph,
     build_reverse_call_graph,
     compute_exception_flow,
+    compute_forward_reachability,
     propagate_exceptions,
 )
 from bubble.results import (
@@ -309,7 +310,15 @@ def find_escapes(
             entrypoint = e
             break
 
-    propagation = propagate_exceptions(model, resolution_mode=resolution_mode)
+    forward_graph = build_forward_call_graph(model)
+    scope = compute_forward_reachability(function_name, model, forward_graph)
+
+    propagation = propagate_exceptions(
+        model,
+        resolution_mode=resolution_mode,
+        skip_evidence=True,
+        scope=scope,
+    )
     flow = compute_exception_flow(function_name, model, propagation)
 
     return EscapesResult(

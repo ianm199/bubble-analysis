@@ -71,8 +71,29 @@ class PropagationResult:
     )
 
 
+def _build_func_name_index(model: ProgramModel) -> dict[str, list[str]]:
+    """Build an index from function name suffixes to qualified keys."""
+    index: dict[str, list[str]] = {}
+    for key in model.functions:
+        if "::" in key:
+            func_name = key.split("::")[-1]
+        elif ":" in key:
+            func_name = key.split(":")[-1]
+        else:
+            func_name = key
+        if func_name not in index:
+            index[func_name] = []
+        index[func_name].append(key)
+    return index
+
+
+_normalize_cache: dict[str, str] = {}
+
+
 def _normalize_callee_to_file_format(
-    callee_qualified: str, model: ProgramModel
+    callee_qualified: str,
+    model: ProgramModel,
+    func_index: dict[str, list[str]] | None = None,
 ) -> str:
     """Normalize a module-dot callee to file::function format.
 
@@ -82,39 +103,105 @@ def _normalize_callee_to_file_format(
     if "::" in callee_qualified:
         return callee_qualified
 
+    if callee_qualified in _normalize_cache:
+        return _normalize_cache[callee_qualified]
+
     parts = callee_qualified.split(".")
     for i in range(len(parts) - 1, 0, -1):
         module_path = "/".join(parts[:i]) + ".py"
         func_name = ".".join(parts[i:])
-        candidate_key = f"{module_path}::{func_name}"
 
-        if candidate_key in model.functions:
-            return candidate_key
+        for sep in ("::", ":"):
+            candidate_key = f"{module_path}{sep}{func_name}"
+            if candidate_key in model.functions:
+                normalized = f"{module_path}::{func_name}"
+                _normalize_cache[callee_qualified] = normalized
+                return normalized
 
-        for key in model.functions:
-            if key.endswith(f"::{func_name}") or key.endswith(f":{func_name}"):
-                if module_path.replace("/", ".").replace(".py", "") in key.replace("/", "."):
-                    return f"{key.split(':')[0]}::{func_name}"
+        if func_index is not None:
+            candidates = func_index.get(func_name, [])
+            module_normalized = module_path.replace("/", ".").replace(".py", "")
+            for key in candidates:
+                if module_normalized in key.replace("/", "."):
+                    file_part = key.split(":")[0]
+                    result = f"{file_part}::{func_name}"
+                    _normalize_cache[callee_qualified] = result
+                    return result
 
+    _normalize_cache[callee_qualified] = callee_qualified
     return callee_qualified
 
 
 def build_forward_call_graph(model: ProgramModel) -> dict[str, set[str]]:
     """Build a map from caller to callees."""
     graph: dict[str, set[str]] = {}
+    func_index = _build_func_name_index(model)
 
     for call_site in model.call_sites:
         caller = call_site.caller_qualified or f"{call_site.file}::{call_site.caller_function}"
         callee = call_site.callee_qualified or call_site.callee_name
 
         if call_site.callee_qualified and "::" not in call_site.callee_qualified:
-            callee = _normalize_callee_to_file_format(call_site.callee_qualified, model)
+            callee = _normalize_callee_to_file_format(call_site.callee_qualified, model, func_index)
 
         if caller not in graph:
             graph[caller] = set()
         graph[caller].add(callee)
 
     return graph
+
+
+def compute_forward_reachability(
+    start_func: str,
+    model: ProgramModel,
+    forward_graph: dict[str, set[str]] | None = None,
+) -> set[str]:
+    """Compute all functions reachable from a starting function via forward calls.
+
+    Unlike compute_reachable_functions, this doesn't require propagation results,
+    making it suitable for scoping propagation before it runs.
+
+    Returns both qualified names and simple names for efficient scope checking.
+    """
+    if forward_graph is None:
+        forward_graph = build_forward_call_graph(model)
+
+    simple_to_qualified: dict[str, list[str]] = {}
+    for key in forward_graph:
+        simple = key.split("::")[-1].split(".")[-1] if "::" in key else key.split(".")[-1]
+        if simple not in simple_to_qualified:
+            simple_to_qualified[simple] = []
+        simple_to_qualified[simple].append(key)
+
+    reachable: set[str] = set()
+    start_simple = start_func.split("::")[-1].split(".")[-1] if "::" in start_func else start_func.split(".")[-1]
+    worklist = [start_func] + simple_to_qualified.get(start_simple, [])
+
+    while worklist:
+        current = worklist.pop()
+        if current in reachable:
+            continue
+        reachable.add(current)
+
+        current_simple = (
+            current.split("::")[-1].split(".")[-1] if "::" in current else current.split(".")[-1]
+        )
+        reachable.add(current_simple)
+
+        callees = forward_graph.get(current, set())
+        if not callees:
+            for qualified_key in simple_to_qualified.get(current_simple, []):
+                if qualified_key not in reachable:
+                    callees = forward_graph.get(qualified_key, set())
+                    if callees:
+                        reachable.add(qualified_key)
+                        break
+
+        for callee in callees:
+            if callee not in reachable:
+                worklist.append(callee)
+
+    return reachable
 
 
 def build_name_to_qualified(propagation: PropagationResult) -> dict[str, list[str]]:
@@ -370,6 +457,7 @@ def propagate_exceptions(
     resolution_mode: ResolutionMode = ResolutionMode.DEFAULT,
     stub_library: StubLibrary | None = None,
     skip_evidence: bool = False,
+    scope: set[str] | None = None,
 ) -> PropagationResult:
     """
     Propagate exceptions through the call graph.
@@ -380,6 +468,8 @@ def propagate_exceptions(
     Args:
         skip_evidence: If True, skip building evidence paths for faster propagation.
                        Use for audit commands where only exception types matter.
+        scope: If provided, only propagate through functions in this set.
+               Use compute_forward_reachability() to get the scope for a single function.
 
     Resolution modes:
     - strict: Only follow resolved calls (no name_fallback or polymorphic)
@@ -388,20 +478,33 @@ def propagate_exceptions(
     """
     from bubble import timing
 
-    cache_key = (
-        id(model),
-        resolution_mode,
-        id(stub_library) if stub_library else None,
-        skip_evidence,
-    )
+    if scope is not None:
+        cache_key = None
+    else:
+        cache_key = (
+            id(model),
+            resolution_mode,
+            id(stub_library) if stub_library else None,
+            skip_evidence,
+        )
 
-    if cache_key in _propagation_cache:
-        return _propagation_cache[cache_key]
+        if cache_key in _propagation_cache:
+            return _propagation_cache[cache_key]
 
     with timing.timed("propagation_setup"):
         direct_raises = compute_direct_raises(model)
         catches_by_function = compute_catches_by_function(model)
-        forward_graph = build_forward_call_graph(model)
+        full_forward_graph = build_forward_call_graph(model)
+
+        if scope is not None:
+            forward_graph = {}
+            for caller, callees in full_forward_graph.items():
+                caller_simple = caller.split("::")[-1].split(".")[-1] if "::" in caller else caller.split(".")[-1]
+                if caller in scope or caller_simple in scope:
+                    forward_graph[caller] = callees
+        else:
+            forward_graph = full_forward_graph
+
         call_site_lookup = _build_call_site_lookup(model) if not skip_evidence else {}
         is_method_lookup = _build_is_method_lookup(model)
 
@@ -590,7 +693,8 @@ def propagate_exceptions(
         propagated_with_evidence=propagated_evidence,
     )
 
-    _propagation_cache[cache_key] = result
+    if cache_key is not None:
+        _propagation_cache[cache_key] = result
     return result
 
 

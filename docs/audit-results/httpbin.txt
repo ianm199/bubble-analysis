@@ -1,0 +1,22 @@
+
+Scanning 55 flask entrypoints...
+
+3 entrypoints have exception handling issues:
+
+  GET /digest-auth/<qop>/<user>/<passwd>
+    ValueError (httpbin/helpers.py:303)
+    ValueError (httpbin/helpers.py:308)
+    ...and 2 more
+
+  GET /digest-auth/<qop>/<user>/<passwd>/<algorithm>
+    ValueError (httpbin/helpers.py:303)
+    ValueError (httpbin/helpers.py:308)
+    ...and 2 more
+
+  GET /digest-auth/<qop>/<user>/<passwd>/<algorithm>/<stale_after>
+    ValueError (httpbin/helpers.py:303)
+    ValueError (httpbin/helpers.py:308)
+    ...and 2 more
+
+52 entrypoints fully covered by exception handlers
+

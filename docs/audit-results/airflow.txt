@@ -1,0 +1,126 @@
+
+Scanning 122 fastapi entrypoints...
+
+31 entrypoints have exception handling issues:
+
+  GET /auth/menus
+    RuntimeError (app.py:161) - only caught by generic handler
+
+  GET /structure/{dag_id}
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /runs/{dag_id}
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /ti_summaries/{dag_id}/{run_id}
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /hook_meta
+    ModuleNotFoundError (core_api/services/ui/connections.py:153) - only caught 
+by generic handler
+
+  GET /{dag_id}
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 6 more
+
+  GET /structure_data
+    TypeError (core_api/services/ui/structure.py:69) - only caught by generic 
+handler
+    TypeError (core_api/services/ui/structure.py:102) - only caught by generic 
+handler
+
+  GET /dependencies
+    ValueError (core_api/services/ui/dependencies.py:65) - only caught by 
+generic handler
+
+  GET /importErrors
+    RuntimeError (app.py:161) - only caught by generic handler
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /hitlDetails
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  DELETE /{pool_name:path}
+
+  DELETE /{xcom_key:path}
+
+  DELETE /{variable_key:path}
+
+  GET /{import_error_id}
+    RuntimeError (app.py:161) - only caught by generic handler
+
+  POST /{dag_id}/unfavorite
+
+  GET /dagWarnings
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /assets
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /assets/aliases
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /assets/events
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /assets/{asset_id}/queuedEvents
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  GET /dags/{dag_id}/assets/queuedEvents
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  DELETE /assets/{asset_id}/queuedEvents
+
+  DELETE /dags/{dag_id}/assets/queuedEvents
+
+  DELETE /dags/{dag_id}/assets/{asset_id}/queuedEvents
+
+  POST /list
+    ValueError (common/parameters.py:217) - only caught by generic handler
+    ValueError (common/parameters.py:284) - only caught by generic handler
+    ...and 4 more
+
+  PATCH /{task_instance_id}
+    RuntimeError (app.py:161) - only caught by generic handler
+
+  DELETE /{variable_key:path}
+
+  DELETE /{dag_id}/{run_id}/{task_id}/{key:path}
+
+  PATCH /{task_instance_id}/run
+    ValueError (execution_api/routes/task_instances.py:226) - only caught by 
+generic handler
+
+  POST /token
+    RuntimeError (app.py:161) - only caught by generic handler
+    ValueError (auth/tokens.py:541) - only caught by generic handler
+
+  GET /token
+    RuntimeError (app.py:161) - only caught by generic handler
+    ValueError (auth/tokens.py:541) - only caught by generic handler
+
+91 entrypoints fully covered by exception handlers
+

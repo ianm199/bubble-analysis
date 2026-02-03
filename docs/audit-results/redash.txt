@@ -1,0 +1,1067 @@
+
+Scanning 135 flask entrypoints...
+
+119 entrypoints have exception handling issues:
+
+  GET /<org_slug>/oauth/google
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /oauth/google
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /oauth/google_callback
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /status.json
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/admin/queries/rq_status
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/config
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET <flask-restful:ConfigurationContainer>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET <flask-restful:ScheduledQueriesExecutions>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE <flask-restful:DataSource>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/destinations/types
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/destinations/<destination_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/destinations/<destination_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/destinations/<destination_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/destinations
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/destinations
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/alerts/<alert_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/alerts/<alert_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/alerts/<alert_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/alerts/<alert_id>/eval
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/alerts/<alert_id>/mute
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/alerts/<alert_id>/mute
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/alerts
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/alerts
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/alerts/<alert_id>/subscriptions
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/alerts/<alert_id>/subscriptions
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/alerts/<alert_id>/subscriptions/<subscriber_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/users
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/users
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/users/<user_id>/invite
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/users/<user_id>/regenerate_api_key
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/users/<user_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/users/<user_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/users/<user_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/users/<user_id>/disable
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/users/<user_id>/disable
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/dashboards
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/dashboards
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/dashboards/my
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/dashboards/<dashboard_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/dashboards/<dashboard_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/dashboards/<dashboard_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/dashboards/public/<token>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/dashboards/<dashboard_id>/share
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/dashboards/<dashboard_id>/share
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/dashboards/tags
+    format (query_runner/rockset.py:44)
+
+  GET /api/dashboards/favorites
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/dashboards/<dashboard_id>/fork
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/events
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/events
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/groups
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/groups
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/groups/<group_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/groups/<group_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/groups/<group_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/groups/<group_id>/members
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/groups/<group_id>/members
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/groups/<group_id>/members/<user_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/groups/<group_id>/data_sources
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/groups/<group_id>/data_sources
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/groups/<group_id>/data_sources/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/groups/<group_id>/data_sources/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/widgets
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/widgets/<int:widget_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/widgets/<int:widget_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/query_snippets/<snippet_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/query_snippets/<snippet_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/query_snippets/<snippet_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/query_snippets
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/query_snippets
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/visualizations
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/visualizations/<visualization_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/visualizations/<visualization_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/query_results
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/<query_id>/dropdowns/<dropdown_query_id>
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/results.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/results
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/results/<query_result_id>.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/query_results/<query_result_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/query_results/<query_result_id>.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/<query_id>/results.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/<query_id>/results
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/<query_id>/results/<query_result_id>.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/query_results/<query_result_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/query_results/<query_result_id>.<filetype>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/favorite
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/queries/<query_id>/favorite
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/dashboards/<object_id>/favorite
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/dashboards/<object_id>/favorite
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/settings/organization
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/settings/organization
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/<object_type>/<object_id>/acl
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/<object_type>/<object_id>/acl
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/<object_type>/<object_id>/acl
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/<object_type>/<object_id>/acl/<access_type>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/data_sources/types
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/data_sources/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/data_sources/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/data_sources/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/data_sources
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/data_sources
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/data_sources/<data_source_id>/schema
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/data_sources/<data_source_id>/pause
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/data_sources/<data_source_id>/pause
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/data_sources/<data_source_id>/test
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/search
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/recent
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET <flask-restful:BaseQueryListResource>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/my
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/<query_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  DELETE /api/queries/<query_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/regenerate_api_key
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/fork
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  POST /api/queries/<query_id>/refresh
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    result (tasks/queries/execution.py:235)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/queries/tags
+    format (query_runner/rockset.py:44)
+
+  GET /api/queries/favorites
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/databricks/databases/<data_source_id>
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+  GET /api/databricks/databases/<data_source_id>/<database_name>/tables
+    ValueError (settings/helpers.py:30)
+    ValueError (utils/__init__.py:105)
+    ...and 5 more
+    format (query_runner/rockset.py:44)
+    KeyError (models/organizations.py:62)
+    KeyError (models/organizations.py:76)
+    QueryDetachedFromDataSourceError (models/parameterized_query.py:29)
+
+16 entrypoints fully covered by exception handlers
+
