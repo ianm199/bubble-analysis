@@ -3,6 +3,8 @@
 Shared audit/entrypoint logic that all integrations use.
 """
 
+from typing import TYPE_CHECKING
+
 from bubble.config import FlowConfig
 from bubble.integrations.base import Entrypoint, GlobalHandler, Integration
 from bubble.integrations.models import (
@@ -22,6 +24,9 @@ from bubble.propagation import (
     compute_reachable_functions,
     propagate_exceptions,
 )
+
+if TYPE_CHECKING:
+    from bubble.stubs import StubLibrary
 
 
 def _filter_async_boundaries(
@@ -190,6 +195,7 @@ def audit_integration(
     global_handlers: list[GlobalHandler],
     skip_evidence: bool = True,
     config: FlowConfig | None = None,
+    stub_library: "StubLibrary | None" = None,
 ) -> AuditResult:
     """Audit entrypoints for a specific integration.
 
@@ -197,6 +203,7 @@ def audit_integration(
         skip_evidence: Skip building evidence paths for faster auditing.
                        Set to False if you need path details.
         config: Optional FlowConfig with handled_base_classes and async_boundaries.
+        stub_library: Optional stub library for external library exceptions.
     """
     if not entrypoints:
         return AuditResult(
@@ -206,7 +213,9 @@ def audit_integration(
             clean_count=0,
         )
 
-    propagation = propagate_exceptions(model, skip_evidence=skip_evidence)
+    propagation = propagate_exceptions(
+        model, skip_evidence=skip_evidence, stub_library=stub_library
+    )
     reraise_patterns = {"Unknown", "e", "ex", "err", "exc", "error", "exception"}
 
     forward_graph = build_forward_call_graph(model)

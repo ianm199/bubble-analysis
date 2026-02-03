@@ -16,6 +16,7 @@ from bubble.integrations.queries import (
     trace_routes_to_exception,
 )
 from bubble.models import ProgramModel
+from bubble.stubs import load_stubs
 
 app = typer.Typer(
     name="fastapi",
@@ -89,7 +90,10 @@ def audit(
             console.print(f"[yellow]No FastAPI routes found in {filter_arg}[/yellow]")
         return
 
-    result = audit_integration(model, integration, entrypoints, handlers)
+    stub_library = load_stubs(directory)
+    result = audit_integration(
+        model, integration, entrypoints, handlers, stub_library=stub_library
+    )
     formatters.audit(result, OutputFormat(output_format), directory, console)
 
 

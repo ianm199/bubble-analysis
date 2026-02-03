@@ -16,6 +16,7 @@ from bubble.integrations.queries import (
     trace_routes_to_exception,
 )
 from bubble.models import ProgramModel
+from bubble.stubs import load_stubs
 
 app = typer.Typer(
     name="cli",
@@ -57,7 +58,10 @@ def audit(
     directory = directory.resolve()
     model = _build_model(directory, use_cache=not no_cache)
     entrypoints = _get_cli_entrypoints(model)
-    result = audit_integration(model, integration, entrypoints, [])
+    stub_library = load_stubs(directory)
+    result = audit_integration(
+        model, integration, entrypoints, [], stub_library=stub_library
+    )
     formatters.audit(result, OutputFormat(output_format), directory, console)
 
 
