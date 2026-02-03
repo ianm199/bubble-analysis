@@ -1,8 +1,8 @@
-# flow
+# Bubble
 
 Static analysis tool for tracing exception flow through Python codebases.
 
-**What can escape from my API endpoints?** Flow answers this by parsing your code, building a call graph, and computing which exceptions propagate to each entrypoint.
+**What can escape from my API endpoints?** Bubble answers this by parsing your code, building a call graph, and computing which exceptions propagate to each entrypoint.
 
 ## Quick Start
 
@@ -26,10 +26,10 @@ bubble trace create_user -d /path/to/project
 
 ## What It Does
 
-Flow finds your HTTP routes and CLI scripts, traces the call graph, and reports which exceptions can escape:
+Bubble finds your HTTP routes and CLI scripts, traces the call graph, and reports which exceptions can escape:
 
 ```
-$ flow flask audit
+$ bubble flask audit
 
 Scanning 23 flask entrypoints...
 
@@ -48,7 +48,7 @@ Scanning 23 flask entrypoints...
 For a specific endpoint, see the full picture:
 
 ```
-$ flow escapes create_user
+$ bubble escapes create_user
 
 Exceptions that can escape from POST /users:
 
@@ -70,7 +70,7 @@ Exceptions that can escape from POST /users:
 Visualize as a tree:
 
 ```
-$ flow trace create_user
+$ bubble trace create_user
 
 POST /users  → escapes: ValidationError, ConnectionError
 ├── validate_input()  → ValidationError
@@ -89,9 +89,10 @@ POST /users  → escapes: ValidationError, ConnectionError
 - **Framework-handled exceptions**: Detects HTTPException, ValidationError → HTTP responses
 - **Confidence levels**: Shows high/medium/low confidence based on resolution quality
 - **Resolution modes**: `--strict` for precision, `--aggressive` for recall
-- **Exception stubs**: Declare what external libraries can raise (requests, sqlalchemy, etc.)
+- **Exception stubs**: Built-in stubs for requests, sqlalchemy, httpx, redis, boto3
 - **JSON output**: All commands support `-f json` for CI/automation
 - **Caching**: SQLite-based caching for fast repeated analysis
+- **Python 3.10+**: Supports Python 3.10, 3.11, 3.12, and 3.13
 
 ## Commands
 
@@ -144,7 +145,7 @@ The `escapes` command accepts additional flags:
 - Celery tasks
 - Scheduled jobs (APScheduler, etc.)
 
-Custom patterns can be added via `.flow/detectors/` (run `bubble init` to set up).
+Custom patterns can be added via `.flow/detectors/`.
 
 ## Extending Bubble
 
@@ -195,7 +196,7 @@ Put it in .flow/detectors/[framework].py
 
 ## Configuration
 
-Flow can be configured via `.flow/config.yaml`:
+Bubble can be configured via `.flow/config.yaml`:
 
 ```yaml
 resolution_mode: default  # "strict", "default", or "aggressive"
@@ -206,13 +207,15 @@ exclude:
 
 ### Exception Stubs
 
-Flow includes built-in stubs for common libraries (requests, sqlalchemy, httpx, redis, boto3). These declare what exceptions external library functions can raise.
+Bubble includes built-in stubs for common libraries (requests, sqlalchemy, httpx, redis, boto3). These declare what exceptions external library functions can raise.
 
 Add custom stubs in `.flow/stubs/`:
 
 ```yaml
 # .flow/stubs/mylib.yaml
-mylib:
+module: mylib
+
+functions:
   do_thing:
     - MyLibError
     - TimeoutError
@@ -237,10 +240,10 @@ Manage stubs with `bubble stubs list` and `bubble stubs validate`.
 ## Development
 
 ```bash
-git clone https://github.com/ianm199/flow
-cd flow
-pip install -e ".[dev]"
-pytest
+git clone https://github.com/ianm199/bubble-analysis
+cd bubble-analysis
+uv pip install -e ".[dev]"
+uv run pytest
 ```
 
 ## License
