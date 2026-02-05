@@ -11,7 +11,7 @@ import typer
 from rich.console import Console
 
 from bubble import formatters, queries, timing
-from bubble.enums import OutputFormat, ResolutionMode
+from bubble.enums import CacheAction, OutputFormat, ResolutionMode, StubAction
 from bubble.extractor import extract_from_directory
 from bubble.models import ProgramModel
 
@@ -224,7 +224,7 @@ def catches(
 
 @app.command()
 def cache(
-    action: Annotated[str, typer.Argument(help="Action: clear or stats")],
+    action: Annotated[CacheAction, typer.Argument(help="Action: clear or stats")],
     directory: Annotated[
         Path, typer.Option("--directory", "-d", help="Directory to manage cache for")
     ] = Path("."),
@@ -236,14 +236,14 @@ def cache(
     cache_dir = directory / ".flow"
     cache_file = cache_dir / "cache.sqlite"
 
-    if action == "clear":
+    if action == CacheAction.CLEAR:
         if cache_file.exists():
             cache_file.unlink()
             console.print("[green]Cache cleared[/green]")
         else:
             console.print("[yellow]No cache to clear[/yellow]")
 
-    elif action == "stats":
+    elif action == CacheAction.STATS:
         if not cache_file.exists():
             console.print("[yellow]No cache exists[/yellow]")
             return
@@ -313,8 +313,7 @@ def init(
 
     console.print(f"\n[bold]Initializing flow analysis for {directory.name}/[/bold]\n")
 
-    with console.status("[bold blue]Analyzing codebase patterns...[/bold blue]"):
-        model = build_model(directory, use_cache=False)
+    model = build_model(directory, use_cache=False)
 
     result = queries.get_init_info(model, directory.name)
     formatters.init_result(result, console)
@@ -388,7 +387,7 @@ See _example.py for a template.
 
 @app.command()
 def stubs(
-    action: Annotated[str, typer.Argument(help="Action: list, init, or validate")],
+    action: Annotated[StubAction, typer.Argument(help="Action: list, init, or validate")],
     library: Annotated[str | None, typer.Argument(help="Library name for init action")] = None,
     directory: Annotated[Path, typer.Option("--directory", "-d", help="Project directory")] = Path(
         "."
@@ -403,7 +402,7 @@ def stubs(
     builtin_dir = Path(__file__).parent / "stubs"
     user_dir = directory / ".flow" / "stubs"
 
-    if action == "list":
+    if action == StubAction.LIST:
         stub_library = load_stubs(directory)
         if not stub_library.stubs:
             console.print("[yellow]No stubs loaded[/yellow]")
@@ -422,7 +421,7 @@ def stubs(
             )
         console.print()
 
-    elif action == "init":
+    elif action == StubAction.INIT:
         if not library:
             console.print("[red]Library name required for init action[/red]")
             console.print("[dim]Example: flow stubs init requests[/dim]")
@@ -443,7 +442,7 @@ def stubs(
         console.print(f"[green]Copied {library}.yaml to .flow/stubs/[/green]")
         console.print("[dim]Edit this file to customize exception declarations.[/dim]")
 
-    elif action == "validate":
+    elif action == StubAction.VALIDATE:
         errors_found = False
         for stub_dir in [builtin_dir, user_dir]:
             if stub_dir.exists():

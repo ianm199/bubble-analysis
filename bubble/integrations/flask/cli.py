@@ -41,9 +41,7 @@ def _get_flask_entrypoints_and_handlers(model: ProgramModel) -> tuple[list, list
     return entrypoints, handlers
 
 
-def _filter_entrypoints(
-    entrypoints: list, filter_arg: str | None, directory: Path
-) -> list:
+def _filter_entrypoints(entrypoints: list, filter_arg: str | None, directory: Path) -> list:
     """Filter entrypoints by file path or route path."""
     if not filter_arg:
         return entrypoints
@@ -91,9 +89,7 @@ def audit(
         return
 
     stub_library = load_stubs(directory)
-    result = audit_integration(
-        model, integration, entrypoints, handlers, stub_library=stub_library
-    )
+    result = audit_integration(model, integration, entrypoints, handlers, stub_library=stub_library)
     formatters.audit(result, OutputFormat(output_format), directory, console)
 
 

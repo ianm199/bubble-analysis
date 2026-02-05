@@ -23,7 +23,7 @@ def test_flask_restful_route_metadata(flask_restful_model):
     assert user_get is not None
     assert user_get.metadata.get("http_method") == "GET"
     assert "/api/users/" in user_get.metadata.get("http_path", "")
-    assert user_get.metadata.get("flask_restful") is True
+    assert user_get.metadata.get("flask_restful") == "true"
 
     user_post = routes.get("UserListResource.post")
     assert user_post is not None

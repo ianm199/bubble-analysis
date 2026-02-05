@@ -3,6 +3,7 @@
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
+from bubble.enums import EntrypointKind
 from bubble.integrations.base import Entrypoint, GlobalHandler
 from bubble.integrations.generic.config import (
     DecoratorRoutePattern,
@@ -33,7 +34,7 @@ class GenericRouteVisitor(cst.CSTVisitor):
                     file=self.file_path,
                     function=node.name.value,
                     line=pos.start.line,
-                    kind="http_route",
+                    kind=EntrypointKind.HTTP_ROUTE,
                     metadata={
                         "framework": self.config.name,
                         "view_type": "class",
@@ -67,7 +68,7 @@ class GenericRouteVisitor(cst.CSTVisitor):
                         file=self.file_path,
                         function=node.name.value,
                         line=pos.start.line,
-                        kind="http_route",
+                        kind=EntrypointKind.HTTP_ROUTE,
                         metadata={
                             "http_method": route_info["method"],
                             "http_path": route_info["path"],
@@ -301,7 +302,7 @@ def _extract_concatenated_string(node: cst.ConcatenatedString) -> str | None:
 def _extract_list_of_strings(value: cst.BaseExpression) -> list[str]:
     """Extract a list of string values from a List or Tuple node."""
     methods: list[str] = []
-    if isinstance(value, (cst.List, cst.Tuple)):
+    if isinstance(value, cst.List | cst.Tuple):
         for el in value.elements:
             if isinstance(el, cst.Element) and isinstance(el.value, cst.SimpleString):
                 extracted = el.value.evaluated_value

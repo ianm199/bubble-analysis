@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 
 from bubble.config import load_config
+from bubble.enums import Framework, OutputFormat
 from bubble.extractor import extract_from_directory
 from bubble.integrations import formatters
 from bubble.integrations.django import DjangoIntegration
@@ -35,14 +36,12 @@ def _build_model(directory: Path, use_cache: bool = True) -> ProgramModel:
 
 def _get_django_entrypoints_and_handlers(model: ProgramModel) -> tuple[list, list]:
     """Get Django entrypoints and global handlers from the model."""
-    entrypoints = [e for e in model.entrypoints if e.metadata.get("framework") == "django"]
+    entrypoints = [e for e in model.entrypoints if e.metadata.get("framework") == Framework.DJANGO]
     handlers = model.global_handlers
     return entrypoints, handlers
 
 
-def _filter_entrypoints(
-    entrypoints: list, filter_arg: str | None, directory: Path
-) -> list:
+def _filter_entrypoints(entrypoints: list, filter_arg: str | None, directory: Path) -> list:
     """Filter entrypoints by file path or route path."""
     if not filter_arg:
         return entrypoints
@@ -65,7 +64,9 @@ def audit(
     directory: Annotated[
         Path, typer.Option("--directory", "-d", help="Directory to analyze")
     ] = Path("."),
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
+    output_format: Annotated[
+        OutputFormat, typer.Option("--format", "-f", help="Output format")
+    ] = OutputFormat.TEXT,
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
     """Check Django views for escaping exceptions.
@@ -102,7 +103,9 @@ def list_views(
     directory: Annotated[
         Path, typer.Option("--directory", "-d", help="Directory to analyze")
     ] = Path("."),
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
+    output_format: Annotated[
+        OutputFormat, typer.Option("--format", "-f", help="Output format")
+    ] = OutputFormat.TEXT,
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
     """List Django views (APIView, ViewSet, @api_view).
@@ -129,7 +132,9 @@ def routes_to(
     include_subclasses: Annotated[
         bool, typer.Option("--include-subclasses", "-s", help="Include subclasses")
     ] = False,
-    output_format: Annotated[str, typer.Option("--format", "-f", help="Output format")] = "text",
+    output_format: Annotated[
+        OutputFormat, typer.Option("--format", "-f", help="Output format")
+    ] = OutputFormat.TEXT,
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Disable caching")] = False,
 ) -> None:
     """Trace which Django views can trigger a given exception.

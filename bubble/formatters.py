@@ -495,8 +495,8 @@ def escapes(
                 "line": result.entrypoint.line,
             }
             if result.entrypoint.kind == EntrypointKind.HTTP_ROUTE:
-                entrypoint_info["http_method"] = result.entrypoint.metadata.get("http_method")
-                entrypoint_info["http_path"] = result.entrypoint.metadata.get("http_path")
+                entrypoint_info["http_method"] = result.entrypoint.metadata.get("http_method", "")
+                entrypoint_info["http_path"] = result.entrypoint.metadata.get("http_path", "")
 
         evidence_json: dict[str, list[dict]] = {}
         for exc_type, evidence_list in result.flow.evidence.items():

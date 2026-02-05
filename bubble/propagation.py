@@ -174,7 +174,11 @@ def compute_forward_reachability(
         simple_to_qualified[simple].append(key)
 
     reachable: set[str] = set()
-    start_simple = start_func.split("::")[-1].split(".")[-1] if "::" in start_func else start_func.split(".")[-1]
+    start_simple = (
+        start_func.split("::")[-1].split(".")[-1]
+        if "::" in start_func
+        else start_func.split(".")[-1]
+    )
     worklist = [start_func] + simple_to_qualified.get(start_simple, [])
 
     while worklist:
@@ -499,7 +503,11 @@ def propagate_exceptions(
         if scope is not None:
             forward_graph = {}
             for caller, callees in full_forward_graph.items():
-                caller_simple = caller.split("::")[-1].split(".")[-1] if "::" in caller else caller.split(".")[-1]
+                caller_simple = (
+                    caller.split("::")[-1].split(".")[-1]
+                    if "::" in caller
+                    else caller.split(".")[-1]
+                )
                 if caller in scope or caller_simple in scope:
                     forward_graph[caller] = callees
         else:
@@ -559,7 +567,9 @@ def propagate_exceptions(
                     propagated_evidence[caller] = {}
 
                 for callee in callees:
-                    call_sites = call_site_lookup.get((caller, callee), []) if not skip_evidence else []
+                    call_sites = (
+                        call_site_lookup.get((caller, callee), []) if not skip_evidence else []
+                    )
                     call_site = call_sites[0] if call_sites else None
                     expanded_callees = expand_polymorphic_call(
                         callee, model.exception_hierarchy, method_to_qualified
@@ -570,7 +580,11 @@ def propagate_exceptions(
                         used_name_fallback = False
                         fallback_match_count = 1
                         callee_exceptions = propagated.get(expanded_callee, set())
-                        callee_evidence = propagated_evidence.get(expanded_callee, {}) if not skip_evidence else {}
+                        callee_evidence = (
+                            propagated_evidence.get(expanded_callee, {})
+                            if not skip_evidence
+                            else {}
+                        )
 
                         if not callee_exceptions:
                             callee_simple = (

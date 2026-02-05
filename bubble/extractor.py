@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     pass
 
 from bubble.detectors import detect_entrypoints, detect_global_handlers
+from bubble.enums import Framework, ResolutionKind, ViewType
 from bubble.integrations.flask import correlate_flask_restful_entrypoints
-from bubble.enums import ResolutionKind
 from bubble.loader import load_detectors
 from bubble.models import (
     CallSite,
@@ -484,7 +484,7 @@ class CodeExtractor(cst.CSTVisitor):
                     )
                 )
 
-    def _parse_depends(self, node: cst.BaseExpression) -> dict[str, str | None] | None:
+    def _parse_depends(self, node: cst.BaseExpression) -> dict[str, str] | None:
         """Parse Depends(func) and return dependency info."""
         if not isinstance(node, cst.Call):
             return None
@@ -501,12 +501,12 @@ class CodeExtractor(cst.CSTVisitor):
         if not dep_name:
             return None
 
+        result = {"name": dep_name}
         qualified = self.import_map.get(dep_name)
+        if qualified:
+            result["qualified"] = qualified
 
-        return {
-            "name": dep_name,
-            "qualified": qualified,
-        }
+        return result
 
     def visit_Assign(self, node: cst.Assign) -> bool:
         """Track variable assignments for constructor resolution."""
@@ -680,7 +680,8 @@ def _inject_drf_dispatch_calls(model: ProgramModel) -> None:
     drf_view_entrypoints = [
         ep
         for ep in model.entrypoints
-        if ep.metadata.get("framework") == "django" and ep.metadata.get("view_type") == "class"
+        if ep.metadata.get("framework") == Framework.DJANGO
+        and ep.metadata.get("view_type") == ViewType.CLASS
     ]
 
     seen_edges: set[tuple[str, str]] = set()

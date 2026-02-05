@@ -426,12 +426,13 @@ def find_catches(
         catch_func_key = f"{catch_site.file}::{catch_site.function}"
         catch_func_simple = catch_site.function.split(".")[-1]
 
-        if catch_func_key not in reachable_functions and catch_func_simple not in reachable_functions:
+        if (
+            catch_func_key not in reachable_functions
+            and catch_func_simple not in reachable_functions
+        ):
             continue
 
-        if _catch_site_catches_exception(
-            catch_site, types_to_find, model.exception_hierarchy
-        ):
+        if _catch_site_catches_exception(catch_site, types_to_find, model.exception_hierarchy):
             matching_catches.append(catch_site)
 
     global_handlers = [

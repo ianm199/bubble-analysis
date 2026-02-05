@@ -39,9 +39,7 @@ def _filter_async_boundaries(
     """
     filtered: dict[str, set[str]] = {}
     for caller, callees in forward_graph.items():
-        filtered_callees = {
-            callee for callee in callees if not config.is_async_boundary(callee)
-        }
+        filtered_callees = {callee for callee in callees if not config.is_async_boundary(callee)}
         if filtered_callees:
             filtered[caller] = filtered_callees
     return filtered

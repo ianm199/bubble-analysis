@@ -27,7 +27,6 @@ from bubble.integrations.fastapi.semantics import (
 )
 from bubble.integrations.flask.detector import (
     FlaskErrorHandlerVisitor,
-    FlaskRESTfulVisitor,
     FlaskRouteVisitor,
     detect_flask_entrypoints,
 )

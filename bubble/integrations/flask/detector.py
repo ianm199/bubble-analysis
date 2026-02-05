@@ -263,7 +263,7 @@ class FlaskRESTfulVisitor(cst.CSTVisitor):
                                 "http_method": method,
                                 "http_path": url,
                                 "framework": Framework.FLASK,
-                                "flask_restful": True,
+                                "flask_restful": "true",
                             },
                         )
                     )
@@ -283,7 +283,7 @@ class FlaskRESTfulVisitor(cst.CSTVisitor):
                             "http_method": method,
                             "http_path": f"<flask-restful:{class_name}>",
                             "framework": Framework.FLASK,
-                            "flask_restful": True,
+                            "flask_restful": "true",
                         },
                     )
                 )
@@ -402,7 +402,7 @@ def correlate_flask_restful_entrypoints(entrypoints: list[Entrypoint]) -> list[E
     for class_name, class_eps in placeholder_classes.items():
         if class_name in real_path_entries:
             reg_eps = real_path_entries[class_name]
-            paths_from_registrations = list({ep.metadata.get("http_path") for ep in reg_eps})
+            paths_from_registrations = list({ep.metadata.get("http_path", "") for ep in reg_eps})
 
             for class_ep in class_eps:
                 for reg_path in paths_from_registrations:
@@ -423,7 +423,7 @@ def correlate_flask_restful_entrypoints(entrypoints: list[Entrypoint]) -> list[E
         else:
             result.extend(class_eps)
 
-    for class_name, eps in real_path_entries.items():
+    for _class_name, eps in real_path_entries.items():
         result.extend(eps)
 
     return result

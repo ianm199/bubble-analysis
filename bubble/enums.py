@@ -38,7 +38,30 @@ class Framework(str, Enum):
 
     FLASK = "flask"
     FASTAPI = "fastapi"
+    DJANGO = "django"
     CLI = "cli"
+
+
+class CacheAction(str, Enum):
+    """Actions for the cache subcommand."""
+
+    CLEAR = "clear"
+    STATS = "stats"
+
+
+class StubAction(str, Enum):
+    """Actions for the stubs subcommand."""
+
+    LIST = "list"
+    INIT = "init"
+    VALIDATE = "validate"
+
+
+class ViewType(str, Enum):
+    """Types of framework views."""
+
+    CLASS = "class"
+    FUNCTION = "function"
 
 
 class ResolutionMode(str, Enum):

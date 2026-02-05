@@ -3,6 +3,7 @@
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
 
+from bubble.enums import EntrypointKind, Framework, ViewType
 from bubble.integrations.base import Entrypoint, GlobalHandler
 
 DRF_BASE_CLASSES = {
@@ -92,10 +93,10 @@ class DjangoViewVisitor(cst.CSTVisitor):
                             file=self.file_path,
                             function=f"{class_name}.{method_name}",
                             line=line,
-                            kind="http_route",
+                            kind=EntrypointKind.HTTP_ROUTE,
                             metadata={
-                                "framework": "django",
-                                "view_type": "class",
+                                "framework": Framework.DJANGO,
+                                "view_type": ViewType.CLASS,
                                 "http_method": http_method,
                                 "http_path": f"<drf:{class_name}>",
                             },
@@ -107,10 +108,10 @@ class DjangoViewVisitor(cst.CSTVisitor):
                         file=self.file_path,
                         function=class_name,
                         line=self._class_line,
-                        kind="http_route",
+                        kind=EntrypointKind.HTTP_ROUTE,
                         metadata={
-                            "framework": "django",
-                            "view_type": "class",
+                            "framework": Framework.DJANGO,
+                            "view_type": ViewType.CLASS,
                             "http_method": "ANY",
                             "http_path": f"<drf:{class_name}>",
                         },
@@ -168,10 +169,10 @@ class DjangoFunctionViewVisitor(cst.CSTVisitor):
                         file=self.file_path,
                         function=node.name.value,
                         line=pos.start.line,
-                        kind="http_route",
+                        kind=EntrypointKind.HTTP_ROUTE,
                         metadata={
-                            "framework": "django",
-                            "view_type": "function",
+                            "framework": Framework.DJANGO,
+                            "view_type": ViewType.FUNCTION,
                             "http_method": methods[0] if methods else "GET",
                         },
                     )
