@@ -1,7 +1,7 @@
 """Handler file - contains @errorhandler that covers routes in other files."""
 
-from flask import Flask, jsonify
-from routes import app, BalanceError
+from flask import jsonify
+from routes import BalanceError, app
 
 
 @app.errorhandler(BalanceError)

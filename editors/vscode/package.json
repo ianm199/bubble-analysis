@@ -1,0 +1,43 @@
+{
+  "name": "flow-exception-analysis",
+  "displayName": "Flow Exception Analysis",
+  "description": "See exception flow through your Python codebase",
+  "version": "0.0.1",
+  "publisher": "ianmclaughlin",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:python"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Flow Exception Analysis",
+      "properties": {
+        "flow.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Python interpreter with bubble-analysis[lsp] installed. Leave empty to auto-detect."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.32",
+    "@types/vscode": "^1.75.0",
+    "typescript": "5.4"
+  }
+}

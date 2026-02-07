@@ -75,12 +75,7 @@ def _build_func_name_index(model: ProgramModel) -> dict[str, list[str]]:
     """Build an index from function name suffixes to qualified keys."""
     index: dict[str, list[str]] = {}
     for key in model.functions:
-        if "::" in key:
-            func_name = key.split("::")[-1]
-        elif ":" in key:
-            func_name = key.split(":")[-1]
-        else:
-            func_name = key
+        func_name = key.split("::")[-1] if "::" in key else key
         if func_name not in index:
             index[func_name] = []
         index[func_name].append(key)
@@ -111,19 +106,17 @@ def _normalize_callee_to_file_format(
         module_path = "/".join(parts[:i]) + ".py"
         func_name = ".".join(parts[i:])
 
-        for sep in ("::", ":"):
-            candidate_key = f"{module_path}{sep}{func_name}"
-            if candidate_key in model.functions:
-                normalized = f"{module_path}::{func_name}"
-                _normalize_cache[callee_qualified] = normalized
-                return normalized
+        candidate_key = f"{module_path}::{func_name}"
+        if candidate_key in model.functions:
+            _normalize_cache[callee_qualified] = candidate_key
+            return candidate_key
 
         if func_index is not None:
             candidates = func_index.get(func_name, [])
             module_normalized = module_path.replace("/", ".").replace(".py", "")
             for key in candidates:
                 if module_normalized in key.replace("/", "."):
-                    file_part = key.split(":")[0]
+                    file_part = key.split("::")[0]
                     result = f"{file_part}::{func_name}"
                     _normalize_cache[callee_qualified] = result
                     return result
@@ -823,14 +816,17 @@ def compute_exception_flow(
 
     flow = ExceptionFlow()
 
-    func_key = None
-    for key in propagation.propagated_raises:
-        if key.endswith(f"::{function_name}") or key.endswith(f".{function_name}"):
-            func_key = key
-            break
-        if "::" in key and key.split("::")[-1].split(".")[-1] == function_name:
-            func_key = key
-            break
+    if function_name in propagation.propagated_raises:
+        func_key = function_name
+    else:
+        func_key = None
+        for key in propagation.propagated_raises:
+            if "::" in key and key.split("::")[-1] == function_name:
+                func_key = key
+                break
+            if "::" in key and key.split("::")[-1].split(".")[-1] == function_name:
+                func_key = key
+                break
 
     if func_key is None:
         return flow

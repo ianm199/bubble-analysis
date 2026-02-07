@@ -86,6 +86,12 @@ def catches_flow_model() -> ProgramModel:
 
 
 @pytest.fixture
+def factory_raise_model() -> ProgramModel:
+    """Pre-built model for factory_raise fixture."""
+    return extract_from_directory(FIXTURES / "factory_raise", use_cache=False)
+
+
+@pytest.fixture
 def remote_handler_model() -> ProgramModel:
     """Pre-built model for remote_handler_app fixture (cross-file handler testing)."""
     return extract_from_directory(FIXTURES / "remote_handler_app", use_cache=False)

@@ -92,9 +92,7 @@ class TestFlowAwareCatches:
 
     def test_include_subclasses_finds_child_raises(self, catches_flow_model):
         """include_subclasses=True finds catches for parent when child is raised."""
-        result = queries.find_catches(
-            catches_flow_model, "ServiceError", include_subclasses=True
-        )
+        result = queries.find_catches(catches_flow_model, "ServiceError", include_subclasses=True)
 
         assert result.raise_site_count >= 1
         assert "ValidationError" in result.types_searched

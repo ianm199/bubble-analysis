@@ -77,7 +77,9 @@ def test_flask_restful_crossfile_correlation(flask_restful_crossfile_model):
 
 def test_flask_restful_crossfile_paths(flask_restful_crossfile_model):
     """Cross-file correlation produces correct paths from registration file."""
-    routes = {e.function: e for e in flask_restful_crossfile_model.entrypoints if e.kind == "http_route"}
+    routes = {
+        e.function: e for e in flask_restful_crossfile_model.entrypoints if e.kind == "http_route"
+    }
 
     user_get = routes.get("UserResource.get")
     assert user_get is not None

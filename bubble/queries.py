@@ -304,9 +304,10 @@ def find_escapes(
     resolution_mode: ResolutionMode = ResolutionMode.DEFAULT,
 ) -> EscapesResult:
     """Find exceptions that can escape from a function."""
+    bare_name = function_name.split("::")[-1] if "::" in function_name else function_name
     entrypoint = None
     for e in model.entrypoints:
-        if e.function == function_name:
+        if e.function == function_name or e.function == bare_name:
             entrypoint = e
             break
 
@@ -462,8 +463,11 @@ def find_function_key(
     model: ProgramModel,
 ) -> str | None:
     """Find the qualified key for a function name."""
+    if function_name in propagated_raises:
+        return function_name
+
     for key in propagated_raises:
-        if key.endswith(f"::{function_name}") or key.endswith(f".{function_name}"):
+        if "::" in key and key.split("::")[-1] == function_name:
             return key
         if "::" in key and key.split("::")[-1].split(".")[-1] == function_name:
             return key

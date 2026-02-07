@@ -6,9 +6,8 @@ an issue by default (remote handlers are considered sufficient coverage).
 """
 
 from bubble.integrations.flask import FlaskIntegration
-from bubble.integrations.queries import audit_integration
+from bubble.integrations.queries import _compute_exception_flow_for_integration, audit_integration
 from bubble.propagation import propagate_exceptions
-from bubble.integrations.queries import _compute_exception_flow_for_integration
 
 
 class TestRemoteHandlerDetection:
@@ -18,15 +17,11 @@ class TestRemoteHandlerDetection:
         """Endpoints with only remote handlers should not be flagged as issues."""
         integration = FlaskIntegration()
         entrypoints = [
-            e
-            for e in remote_handler_model.entrypoints
-            if e.metadata.get("framework") == "flask"
+            e for e in remote_handler_model.entrypoints if e.metadata.get("framework") == "flask"
         ]
         handlers = remote_handler_model.global_handlers
 
-        result = audit_integration(
-            remote_handler_model, integration, entrypoints, handlers
-        )
+        result = audit_integration(remote_handler_model, integration, entrypoints, handlers)
 
         assert len(result.issues) == 0, (
             f"Remote-only handlers should not create issues, but got {len(result.issues)}"
@@ -37,9 +32,7 @@ class TestRemoteHandlerDetection:
         """Remote handler exceptions are still tracked in the flow data."""
         integration = FlaskIntegration()
         entrypoints = [
-            e
-            for e in remote_handler_model.entrypoints
-            if e.metadata.get("framework") == "flask"
+            e for e in remote_handler_model.entrypoints if e.metadata.get("framework") == "flask"
         ]
         handlers = remote_handler_model.global_handlers
         propagation = propagate_exceptions(remote_handler_model)
@@ -58,9 +51,7 @@ class TestRemoteHandlerDetection:
     def test_same_file_handler_not_flagged_as_remote(self, flask_model):
         """Handlers in the same file as routes are not marked as remote."""
         integration = FlaskIntegration()
-        entrypoints = [
-            e for e in flask_model.entrypoints if e.metadata.get("framework") == "flask"
-        ]
+        entrypoints = [e for e in flask_model.entrypoints if e.metadata.get("framework") == "flask"]
         handlers = flask_model.global_handlers
 
         result = audit_integration(flask_model, integration, entrypoints, handlers)

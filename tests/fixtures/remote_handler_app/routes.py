@@ -7,6 +7,7 @@ app = Flask(__name__)
 
 class BalanceError(Exception):
     """Custom balance error."""
+
     pass
 
 

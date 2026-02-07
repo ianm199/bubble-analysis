@@ -168,26 +168,26 @@ class TestEdgeCases:
 
     def test_handles_no_decorators(self):
         """Handles file with no route decorators."""
-        source = '''
+        source = """
 def helper():
     pass
 
 class NotAView:
     pass
-'''
+"""
         routes = detect_entrypoints(source, "test.py", FLASK_CONFIG)
         assert routes == []
 
     def test_framework_name_in_metadata(self):
         """Framework name is correctly set in metadata."""
-        source = '''
+        source = """
 from flask import Flask
 app = Flask(__name__)
 
 @app.route("/")
 def index():
     pass
-'''
+"""
         routes = detect_entrypoints(source, "test.py", FLASK_CONFIG)
         assert len(routes) == 1
         assert routes[0].metadata.get("framework") == "flask"

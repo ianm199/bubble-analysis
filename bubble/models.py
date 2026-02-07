@@ -1,12 +1,37 @@
 """Data models for code flow analysis."""
 
 from dataclasses import dataclass, field
+from difflib import get_close_matches
+from typing import NewType
 
 from bubble.enums import ConfidenceLevel, EntrypointKind, ResolutionKind
 from bubble.integrations.base import (
     Entrypoint,
     GlobalHandler,
 )
+
+FunctionKey = NewType("FunctionKey", str)
+
+
+class FunctionNotFoundError(Exception):
+    """Raised when a function name cannot be resolved to a key."""
+
+    def __init__(self, name: str, suggestions: list[str] | None = None) -> None:
+        self.name = name
+        self.suggestions = suggestions or []
+        msg = f"Function not found: {name}"
+        if self.suggestions:
+            msg += f" (did you mean: {', '.join(self.suggestions)}?)"
+        super().__init__(msg)
+
+
+class AmbiguousFunctionError(Exception):
+    """Raised when a function name matches multiple keys."""
+
+    def __init__(self, name: str, matches: list[str]) -> None:
+        self.name = name
+        self.matches = matches
+        super().__init__(f"Ambiguous function name '{name}' matches: {', '.join(matches)}")
 
 BUILTIN_EXCEPTION_HIERARCHY: dict[str, list[str]] = {
     "BaseException": [],
@@ -67,6 +92,9 @@ BUILTIN_EXCEPTION_HIERARCHY: dict[str, list[str]] = {
 }
 
 __all__ = [
+    "FunctionKey",
+    "FunctionNotFoundError",
+    "AmbiguousFunctionError",
     "FunctionDef",
     "ClassDef",
     "RaiseSite",
@@ -359,6 +387,7 @@ class ProgramModel:
 
     functions: dict[str, FunctionDef] = field(default_factory=dict)
     classes: dict[str, ClassDef] = field(default_factory=dict)
+    name_to_keys: dict[str, list[str]] = field(default_factory=dict)
     raise_sites: list[RaiseSite] = field(default_factory=list)
     catch_sites: list[CatchSite] = field(default_factory=list)
     call_sites: list[CallSite] = field(default_factory=list)
@@ -369,6 +398,25 @@ class ProgramModel:
     import_maps: dict[str, dict[str, str]] = field(default_factory=dict)
     return_types: dict[str, str] = field(default_factory=dict)
     detected_frameworks: set[str] = field(default_factory=set)
+
+    def resolve_function_key(self, name: str) -> FunctionKey:
+        """Resolve a bare name, qualified name, or full key to a FunctionKey.
+
+        Called at system boundaries: CLI input, LSP hover, entrypoint wiring.
+        Raises FunctionNotFoundError or AmbiguousFunctionError.
+        """
+        if name in self.functions:
+            return FunctionKey(name)
+
+        matches = self.name_to_keys.get(name, [])
+        if len(matches) == 1:
+            return FunctionKey(matches[0])
+        if len(matches) > 1:
+            raise AmbiguousFunctionError(name, matches)
+
+        all_names = list(self.name_to_keys.keys())
+        suggestions = get_close_matches(name, all_names, n=3, cutoff=0.5)
+        raise FunctionNotFoundError(name, suggestions)
 
     def get_function_by_name(self, name: str, file: str | None = None) -> FunctionDef | None:
         """Find a function by name, optionally scoped to a file."""

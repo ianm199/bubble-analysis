@@ -17,6 +17,7 @@ from bubble.enums import Framework, ResolutionKind, ViewType
 from bubble.integrations.flask import correlate_flask_restful_entrypoints
 from bubble.loader import load_detectors
 from bubble.models import (
+    BUILTIN_EXCEPTION_HIERARCHY,
     CallSite,
     CatchSite,
     ClassDef,
@@ -647,6 +648,107 @@ def _should_exclude(path_str: str, exclude_dirs: Sequence[str]) -> bool:
     return False
 
 
+def _build_known_class_names(model: ProgramModel) -> set[str]:
+    """Build set of all known class names (builtins + project-defined)."""
+    known: set[str] = set(BUILTIN_EXCEPTION_HIERARCHY.keys())
+    for cls_def in model.classes.values():
+        known.add(cls_def.name)
+    return known
+
+
+def _resolve_return_type_for_name(
+    model: ProgramModel,
+    name: str,
+    raise_file: str,
+    raise_function: str,
+) -> str | None:
+    """Resolve a function name to its return type annotation.
+
+    Tries same-file lookup, import-based cross-file lookup, and self.method() resolution.
+    """
+    if name.startswith("self."):
+        return _resolve_self_method_return_type(model, name, raise_file, raise_function)
+
+    same_file_key = f"{raise_file}::{name}"
+    return_type = model.return_types.get(same_file_key)
+    if return_type:
+        return return_type
+
+    import_map = model.import_maps.get(raise_file, {})
+    if name in import_map:
+        module_path = import_map[name]
+        return_type = _lookup_return_type_by_module_path(model, module_path)
+        if return_type:
+            return return_type
+
+    return None
+
+
+def _lookup_return_type_by_module_path(
+    model: ProgramModel,
+    module_path: str,
+) -> str | None:
+    """Look up a return type by converting a dotted module path to file format.
+
+    Converts e.g. 'errors.http_exception' to 'errors.py::http_exception' and looks up
+    the return type.
+    """
+    parts = module_path.split(".")
+    for i in range(len(parts) - 1, 0, -1):
+        file_path = "/".join(parts[:i]) + ".py"
+        func_name = ".".join(parts[i:])
+        key = f"{file_path}::{func_name}"
+        return_type = model.return_types.get(key)
+        if return_type:
+            return return_type
+    return None
+
+
+def _resolve_self_method_return_type(
+    model: ProgramModel,
+    name: str,
+    raise_file: str,
+    raise_function: str,
+) -> str | None:
+    """Resolve self.method() to its return type by finding the class method."""
+    method_name = name.removeprefix("self.")
+
+    if "." in raise_function:
+        class_name = raise_function.rsplit(".", 1)[0]
+    else:
+        return None
+
+    key = f"{raise_file}::{class_name}.{method_name}"
+    return_type = model.return_types.get(key)
+    if return_type:
+        return return_type
+
+    return None
+
+
+def _resolve_factory_raised_exceptions(model: ProgramModel) -> None:
+    """Resolve exception types for factory-raised exceptions.
+
+    When code does `raise http_exception(500)` where `http_exception` is a factory
+    function returning `HTTPException`, the extractor records the exception_type as
+    "http_exception". This post-build step resolves it to "HTTPException" using the
+    function's return type annotation.
+    """
+    known_classes = _build_known_class_names(model)
+
+    for raise_site in model.raise_sites:
+        if raise_site.exception_type in known_classes:
+            continue
+
+        exc_type = raise_site.exception_type
+
+        return_type = _resolve_return_type_for_name(
+            model, exc_type, raise_site.file, raise_site.function
+        )
+        if return_type:
+            raise_site.exception_type = return_type
+
+
 DRF_HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 DRF_ACTION_METHODS = {"list", "create", "retrieve", "update", "partial_update", "destroy"}
 DRF_DISPATCH_METHODS = DRF_HTTP_METHODS | DRF_ACTION_METHODS
@@ -717,9 +819,8 @@ def _inject_drf_dispatch_calls(model: ProgramModel) -> None:
             else:
                 for key in model.functions:
                     if view_class in key and func_def.name in key:
-                        parts = key.split(":")
-                        if parts:
-                            relative_file = parts[0]
+                        if "::" in key:
+                            relative_file = key.split("::")[0]
                         break
 
             caller_qualified = f"{relative_file}::{view_class}"
@@ -817,11 +918,11 @@ def extract_from_directory(
     with timing.timed("model_aggregation"):
         for path_str, extraction in extractions:
             for func in extraction.functions:
-                key = f"{path_str}:{func.qualified_name}"
+                key = f"{path_str}::{func.qualified_name}"
                 model.functions[key] = func
 
             for cls in extraction.classes:
-                key = f"{path_str}:{cls.qualified_name}"
+                key = f"{path_str}::{cls.qualified_name}"
                 model.classes[key] = cls
                 model.exception_hierarchy.add_class(cls)
 
@@ -853,5 +954,17 @@ def extract_from_directory(
 
     model.entrypoints = correlate_flask_restful_entrypoints(model.entrypoints)
     _inject_drf_dispatch_calls(model)
+    _resolve_factory_raised_exceptions(model)
+
+    name_to_keys: dict[str, list[str]] = {}
+    for key, func in model.functions.items():
+        if func.name not in name_to_keys:
+            name_to_keys[func.name] = []
+        name_to_keys[func.name].append(key)
+        if func.qualified_name != func.name:
+            if func.qualified_name not in name_to_keys:
+                name_to_keys[func.qualified_name] = []
+            name_to_keys[func.qualified_name].append(key)
+    model.name_to_keys = name_to_keys
 
     return model

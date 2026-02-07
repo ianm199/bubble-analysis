@@ -165,27 +165,31 @@ bubble/
 ├── cache.py        # SQLite-based caching for file extraction
 ├── timing.py       # Performance instrumentation (--timing flag)
 ├── cli.py          # Core CLI + integration subcommand registration
+├── lsp.py          # LSP server (pygls) — hover + route diagnostics
 │
-└── integrations/   # Framework-specific code (Flask, FastAPI, CLI scripts)
-    ├── __init__.py     # Integration registry and discovery
-    ├── base.py         # Entrypoint, GlobalHandler, Integration protocol
-    ├── models.py       # AuditResult, EntrypointsResult, etc.
-    ├── queries.py      # Shared audit/entrypoint logic for integrations
-    ├── formatters.py   # Shared integration formatters
-    │
-    ├── flask/          # Flask integration
-    │   ├── detector.py     # FlaskRouteVisitor, FlaskErrorHandlerVisitor
-    │   ├── semantics.py    # EXCEPTION_RESPONSES (HTTPException mappings)
-    │   └── cli.py          # `bubble flask` subcommands
-    │
-    ├── fastapi/        # FastAPI integration
-    │   ├── detector.py     # FastAPIRouteVisitor, FastAPIExceptionHandlerVisitor
-    │   ├── semantics.py    # EXCEPTION_RESPONSES
-    │   └── cli.py          # `bubble fastapi` subcommands
-    │
-    └── cli_scripts/    # CLI script integration
-        ├── detector.py     # CLIEntrypointVisitor
-        └── cli.py          # `bubble cli` subcommands
+├── integrations/   # Framework-specific code (Flask, FastAPI, CLI scripts)
+│   ├── __init__.py     # Integration registry and discovery
+│   ├── base.py         # Entrypoint, GlobalHandler, Integration protocol
+│   ├── models.py       # AuditResult, EntrypointsResult, etc.
+│   ├── queries.py      # Shared audit/entrypoint logic for integrations
+│   ├── formatters.py   # Shared integration formatters
+│   │
+│   ├── flask/          # Flask integration
+│   │   ├── detector.py     # FlaskRouteVisitor, FlaskErrorHandlerVisitor
+│   │   ├── semantics.py    # EXCEPTION_RESPONSES (HTTPException mappings)
+│   │   └── cli.py          # `bubble flask` subcommands
+│   │
+│   ├── fastapi/        # FastAPI integration
+│   │   ├── detector.py     # FastAPIRouteVisitor, FastAPIExceptionHandlerVisitor
+│   │   ├── semantics.py    # EXCEPTION_RESPONSES
+│   │   └── cli.py          # `bubble fastapi` subcommands
+│   │
+│   └── cli_scripts/    # CLI script integration
+│       ├── detector.py     # CLIEntrypointVisitor
+│       └── cli.py          # `bubble cli` subcommands
+│
+└── editors/
+    └── zed/            # Zed extension (Rust → WASM, ~50 lines)
 ```
 
 ### Architecture: Clean Separation of Concerns
@@ -371,6 +375,28 @@ Thin layer (~300 lines) that only does:
 2. Call `build_model()` to get the program model
 3. Call `queries.xyz()` to run the query
 4. Call `formatters.xyz()` to render output
+
+### lsp.py
+
+LSP server (pygls 2.0) providing two features:
+
+**Hover** — context-sensitive, three-way dispatch based on cursor position:
+
+| Cursor on | Shows | Implementation |
+|-----------|-------|----------------|
+| `def` / `async def` line | Full exception flow for that function | `compute_exception_flow` with unscoped (cached) propagation |
+| A function/method call | Exceptions the callee can throw | Lookup in `propagated_raises[callee_key]` |
+| Anywhere else | Nothing (no popup) | Returns `None` |
+
+**Diagnostics** — warning-level squiggly lines on route decorators (`@router.get(...)`, `@app.route(...)`, etc.) where uncaught exceptions can escape. Published on `didOpen` and `didSave` via `textDocument/publishDiagnostics`. The decorator line is found by scanning backwards from the entrypoint's `def` line.
+
+**Suppression comments** — routes can opt out of warnings:
+- `# bubble: ignore` — suppress all warnings on a route
+- `# bubble: ignore[ValueError, KeyError]` — suppress specific types only
+
+Uses `propagate_exceptions(model, skip_evidence=True)` which caches after first call per model instance. All subsequent hovers/diagnostics are dict lookups. Reraise patterns (`e`, `ex`, `err`, `exc`, `error`, `exception`, `Unknown`) are filtered from all output.
+
+Model lifecycle: built on first query (`didOpen` or hover), invalidated on `didSave`, rebuilt lazily on next query.
 
 ## Commands
 

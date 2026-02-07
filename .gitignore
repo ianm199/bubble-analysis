@@ -50,6 +50,12 @@ htmlcov/
 DESIGN.md
 specs/
 
+# Node
+node_modules/
+
+# Rust
+target/
+
 # OS
 .DS_Store
 Thumbs.db

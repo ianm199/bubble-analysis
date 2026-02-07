@@ -1,0 +1,11 @@
+id = "bubble"
+name = "Bubble"
+version = "0.0.1"
+schema_version = 1
+authors = ["Ian McLaughlin <ianm199@github.com>"]
+description = "See exception flow through your Python codebase"
+repository = "https://github.com/ianm199/bubble-zed"
+
+[language_servers.bubble-lsp]
+name = "Bubble"
+languages = ["Python"]

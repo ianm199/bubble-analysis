@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bubble-analysis"
-version = "0.3.4"
+version = "0.3.5"
 description = "Static analysis tool for tracing exception flow through Python codebases"
 readme = "README.md"
 license = "MIT"
@@ -48,6 +48,9 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
 ]
+lsp = [
+    "pygls>=2.0,<3.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/ianm199/flow"
@@ -56,6 +59,7 @@ Issues = "https://github.com/ianm199/flow/issues"
 
 [project.scripts]
 bubble = "bubble.cli:app"
+bubble-lsp = "bubble.lsp:main"
 
 [tool.setuptools.packages.find]
 include = ["bubble*"]

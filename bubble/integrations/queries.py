@@ -72,14 +72,17 @@ def _compute_exception_flow_for_integration(
     flow = ExceptionFlow()
     handled_base_classes = config.handled_base_classes if config else []
 
-    func_key = None
-    for key in propagation.propagated_raises:
-        if key.endswith(f"::{function_name}") or key.endswith(f".{function_name}"):
-            func_key = key
-            break
-        if "::" in key and key.split("::")[-1].split(".")[-1] == function_name:
-            func_key = key
-            break
+    if function_name in propagation.propagated_raises:
+        func_key = function_name
+    else:
+        func_key = None
+        for key in propagation.propagated_raises:
+            if "::" in key and key.split("::")[-1] == function_name:
+                func_key = key
+                break
+            if "::" in key and key.split("::")[-1].split(".")[-1] == function_name:
+                func_key = key
+                break
 
     if func_key is None:
         return flow
